@@ -54,8 +54,8 @@
                     // FCM 토큰을 입력란에도 자동 입력
                     document.getElementById('fcmToken').value = currentToken;
                     
-                    // 회원 ID 1로 토큰 등록
-                    await registerToken(1, currentToken);
+                    // FCM 토큰 생성만 완료 (수동 등록 필요)
+                    console.log('FCM 토큰 생성 완료. 수동으로 등록해주세요.');
                     return currentToken;
                 } else {
                     throw new Error('FCM 토큰 생성에 실패했습니다. 콘솔을 확인해주세요.');
@@ -441,6 +441,8 @@
                 <ul style="margin: 10px 0; padding-left: 20px;">
                     <li><code>POST /token</code> - FCM 토큰 등록</li>
                     <li><code>POST /call</code> - 환자 호출 (핵심)</li>
+                    <li><code>GET /history</code> - 알림 이력 조회 (신규)</li>
+                    <li><code>GET /history/appointment/{id}</code> - 예약별 이력 조회</li>
                 </ul>
 
                 <h4 style="margin-top: 20px; color: #2d3748;">예약 API</h4>
@@ -482,6 +484,36 @@
                 <tbody id="appointmentsBody">
                     <tr>
                         <td colspan="8" style="text-align: center; color: #666;">목록을 불러오려면 새로고침 버튼을 클릭하세요</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 알림 이력 조회 -->
+        <div class="card patients-table">
+            <h2>🔔 알림 전송 이력</h2>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                <label for="historyAppointmentId">예약 ID (선택)</label>
+                <input type="number" id="historyAppointmentId" placeholder="전체 이력을 보려면 비워두세요" style="width: 200px;">
+                <button class="btn" onclick="loadNotificationHistory()">이력 조회</button>
+                <button class="btn" onclick="clearNotificationHistory()">목록 지우기</button>
+            </div>
+            
+            <table class="table" id="notificationHistoryTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>예약ID</th>
+                        <th>제목</th>
+                        <th>내용</th>
+                        <th>성공여부</th>
+                        <th>오류메시지</th>
+                        <th>전송시간</th>
+                    </tr>
+                </thead>
+                <tbody id="notificationHistoryBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #666;">이력을 조회하려면 '이력 조회' 버튼을 클릭하세요</td>
                     </tr>
                 </tbody>
             </table>
@@ -861,6 +893,67 @@
             } catch (error) {
                 alert('수정에 실패했습니다: ' + error.message);
             }
+        }
+
+        // 알림 이력 조회
+        async function loadNotificationHistory() {
+            const appointmentId = document.getElementById('historyAppointmentId').value;
+            const url = appointmentId ? 
+                `${BASE_URL}/history?appointmentId=${appointmentId}` : 
+                `${BASE_URL}/history`;
+
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (response.ok && result.data) {
+                    displayNotificationHistory(result.data);
+                } else {
+                    alert('이력 조회 실패: ' + result.message);
+                }
+            } catch (error) {
+                console.error('알림 이력 조회 오류:', error);
+                alert('이력 조회 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 알림 이력 표시
+        function displayNotificationHistory(histories) {
+            const tbody = document.getElementById('notificationHistoryBody');
+            
+            if (histories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">조회된 알림 이력이 없습니다</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = histories.map(history => {
+                const successBadge = history.isSuccess ? 
+                    '<span class="status-badge status-arrived">✅ 성공</span>' : 
+                    '<span class="status-badge status-called">❌ 실패</span>';
+                
+                return `
+                    <tr>
+                        <td>${history.id}</td>
+                        <td>${history.appointmentId || '-'}</td>
+                        <td>${history.title}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${history.message}">
+                            ${history.message}
+                        </td>
+                        <td>${successBadge}</td>
+                        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${history.errorMessage || ''}">
+                            ${history.errorMessage || '-'}
+                        </td>
+                        <td>${new Date(history.createdAt).toLocaleString('ko-KR')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 알림 이력 목록 지우기
+        function clearNotificationHistory() {
+            document.getElementById('notificationHistoryBody').innerHTML = 
+                '<tr><td colspan="7" style="text-align: center; color: #666;">이력을 조회하려면 \'이력 조회\' 버튼을 클릭하세요</td></tr>';
+            document.getElementById('historyAppointmentId').value = '';
         }
 
         // 페이지 로드시 목록 불러오기
