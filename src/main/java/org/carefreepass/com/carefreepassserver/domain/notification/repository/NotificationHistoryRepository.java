@@ -26,4 +26,9 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
 
     @Query("SELECT n FROM NotificationHistory n WHERE n.appointment.member.id = :memberId ORDER BY n.createdAt DESC")
     List<NotificationHistory> findByMemberIdOrderByCreatedAtDesc(@Param("memberId") Long memberId);
+
+    /**
+     * 전체 알림 이력을 최신순으로 조회 (최신 100개로 제한)
+     */
+    List<NotificationHistory> findTop100ByOrderByCreatedAtDesc();
 }
