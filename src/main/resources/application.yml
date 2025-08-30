@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: CareFreePass-Server
+  profiles:
+    group:
+      local: "local, datasource"
+      dev: "dev, datasource"
