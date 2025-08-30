@@ -26,18 +26,23 @@ public class PatientProfile {
     @JoinColumn(name = "member_id")
     private Member member;
 
-    private LocalDate birthDate;
+    private String birthDate;
 
     private Gender gender;
 
-    @Column(nullable = false)
-    private String password;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private PatientProfile(Member member, LocalDate birthDate, Gender gender, String password) {
+    private PatientProfile(Member member, String birthDate, Gender gender) {
         this.member = member;
         this.birthDate = birthDate;
         this.gender = gender;
-        this.password = password;
+    }
+
+    public static PatientProfile createPatientProfile(Member member, String birthDate, Gender gender) {
+        return PatientProfile.builder()
+                .member(member)
+                .birthDate(birthDate)
+                .gender(gender)
+                .build();
     }
 }

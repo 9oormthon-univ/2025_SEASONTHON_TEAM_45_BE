@@ -36,20 +36,25 @@ public class Member extends BaseTimeEntity {
     @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
 
+    @Column(nullable = false)
+    private String password;
+
     @Builder(access = AccessLevel.PRIVATE)
-    private Member(MemberRole role, Status status, String name, String phoneNumber) {
+    private Member(MemberRole role, Status status, String name, String phoneNumber, String password) {
         this.role = role;
         this.status = status;
         this.name = name;
         this.phoneNumber = phoneNumber;
+        this.password = password;
     }
 
-    public static Member createMember(MemberRole role, String name, String phoneNumber) {
+    public static Member createMember(MemberRole role, String name, String phoneNumber, String password) {
         return Member.builder()
                 .role(role)
                 .status(Status.ACTIVE)
                 .name(name)
                 .phoneNumber(phoneNumber)
+                .password(password)
                 .build();
     }
 }
