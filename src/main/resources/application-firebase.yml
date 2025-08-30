@@ -1,0 +1,3 @@
+firebase:
+  service-account-key: ${FIREBASE_SERVICE_ACCOUNT_KEY:classpath:firebase-service-account.json}
+  project-id: ${FIREBASE_PROJECT_ID:hackerton-fcm}

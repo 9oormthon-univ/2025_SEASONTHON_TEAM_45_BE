@@ -2,6 +2,7 @@ package org.carefreepass.com.carefreepassserver.domain.auth.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.carefreepass.com.carefreepassserver.domain.auth.controller.docs.AuthDocs;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignInRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.RefreshTokenRequest;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class AuthController implements AuthDocs {
     private final AuthService authService;
 
     @PostMapping("patient/sign-up")

@@ -7,7 +7,10 @@ spring:
       dev: "dev, datasource"
 
     include:
+      - datasource
       - redis
+      - firebase
+      - security
 
 swagger:
   version: ${SWAGGER_VERSION:0.0.1}
