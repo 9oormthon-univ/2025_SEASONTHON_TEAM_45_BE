@@ -1,6 +1,8 @@
 package org.carefreepass.com.carefreepassserver.domain.appointment.controller;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -216,6 +219,62 @@ public class AppointmentController implements AppointmentDocs {
             return ApiResponseTemplate.error()
                     .code("APPOINTMENT_5007")
                     .message("예약 수정에 실패했습니다.")
+                    .build();
+        }
+    }
+
+    /**
+     * 의사별 예약 가능 시간을 조회합니다.
+     * 
+     * @param doctorName 의사 이름
+     * @param date 예약 날짜 (yyyy-MM-dd 형식)
+     * @return 예약 가능한 시간 목록
+     */
+    @GetMapping("/available-times/doctor")
+    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByDoctor(
+            @RequestParam String doctorName,
+            @RequestParam LocalDate date) {
+        try {
+            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByDoctor(doctorName, date);
+            
+            return ApiResponseTemplate.ok()
+                    .code("APPOINTMENT_2008")
+                    .message("의사별 예약 가능 시간 조회가 완료되었습니다.")
+                    .body(availableTimes);
+
+        } catch (Exception e) {
+            log.error("Failed to get available times by doctor: {} for date: {}", doctorName, date, e);
+            return ApiResponseTemplate.error()
+                    .code("APPOINTMENT_5008")
+                    .message("의사별 예약 가능 시간 조회에 실패했습니다.")
+                    .build();
+        }
+    }
+
+    /**
+     * 진료실별 예약 가능 시간을 조회합니다.
+     * 
+     * @param roomNumber 진료실 번호
+     * @param date 예약 날짜 (yyyy-MM-dd 형식)
+     * @return 예약 가능한 시간 목록
+     */
+    @GetMapping("/available-times/room")
+    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByRoom(
+            @RequestParam String roomNumber,
+            @RequestParam LocalDate date) {
+        try {
+            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByRoom(roomNumber, date);
+            
+            return ApiResponseTemplate.ok()
+                    .code("APPOINTMENT_2009")
+                    .message("진료실별 예약 가능 시간 조회가 완료되었습니다.")
+                    .body(availableTimes);
+
+        } catch (Exception e) {
+            log.error("Failed to get available times by room: {} for date: {}", roomNumber, date, e);
+            return ApiResponseTemplate.error()
+                    .code("APPOINTMENT_5009")
+                    .message("진료실별 예약 가능 시간 조회에 실패했습니다.")
                     .build();
         }
     }
