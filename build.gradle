@@ -52,6 +52,9 @@ dependencies {
 
     // FCM
     implementation 'com.google.firebase:firebase-admin:9.2.0'
+    
+    // .env file support
+    implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 }
 
 tasks.named('test') {

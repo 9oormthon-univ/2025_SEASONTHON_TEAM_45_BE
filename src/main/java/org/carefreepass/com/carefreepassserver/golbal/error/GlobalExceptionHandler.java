@@ -79,6 +79,11 @@ public class GlobalExceptionHandler {
     }
 
     private void doSystemLog(final Exception exception, final HttpServletRequest request) {
+        // favicon.ico 요청은 로그를 찍지 않음
+        if (request.getRequestURI().equals("/favicon.ico")) {
+            return;
+        }
+        
         final ExceptionLogEntry entry = ExceptionLogEntry.builder()
                 .timestamp(OffsetDateTime.now().toString())
                 .exceptionType(exception.getClass().getName())

@@ -7,6 +7,7 @@ spring:
       dev: "dev, datasource"
 
     include:
+      - datasource
       - redis
       - firebase
       - security

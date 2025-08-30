@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+org.carefreepass.com.carefreepassserver.config.DotenvConfig

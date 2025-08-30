@@ -31,9 +31,14 @@ public class SecurityConfig {
                                                 "/swagger-ui/**",
                                                 "/v3/api-docs/**",
                                                 "/swagger-resources/**",
-                                                "**"
+                                                "/favicon.ico",
+                                                "/static/**",
+                                                "/*.html",
+                                                "/firebase-messaging-sw.js"
                                         ).permitAll()
                                         .requestMatchers("/api/v1/auth/**")
+                                        .permitAll()
+                                        .requestMatchers("/api/v1/notifications/**", "/api/v1/appointments/**", "/api/v1/members/**")
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
