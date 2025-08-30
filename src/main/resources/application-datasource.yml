@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: "datasource"
   datasource:
-    url: jdbc:mariadb://${MARIADB_HOST:localhost}:${MARIADB_PORT:3307}/${DB_NAME}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    url: jdbc:mariadb://${MARIADB_HOST:localhost}:${MARIADB_PORT:3306}/${DB_NAME}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul
     driver-class-name: org.mariadb.jdbc.Driver
     username: ${MARIADB_USERNAME}
     password: ${MARIADB_PASSWORD}

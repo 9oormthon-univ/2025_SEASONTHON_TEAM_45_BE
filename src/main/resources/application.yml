@@ -8,6 +8,8 @@ spring:
 
     include:
       - redis
+      - firebase
+      - security
 
 swagger:
   version: ${SWAGGER_VERSION:0.0.1}
