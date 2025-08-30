@@ -35,3 +35,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Firebase ###
+firebase-service-account.json
+**/firebase-service-account*.json
+docs/*firebase*.json
+
+### Environment Variables ###
+.env
+.env.local
+.env.prod
