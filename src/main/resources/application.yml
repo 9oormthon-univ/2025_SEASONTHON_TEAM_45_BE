@@ -5,3 +5,7 @@ spring:
     group:
       local: "local, datasource"
       dev: "dev, datasource"
+
+swagger:
+  version: ${SWAGGER_VERSION:0.0.1}
+  url: ${SWAGGER_URL:http://localhost:8080}
