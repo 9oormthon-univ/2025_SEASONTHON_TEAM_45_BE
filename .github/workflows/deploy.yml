@@ -100,24 +100,33 @@ jobs:
             curl -fsSL https://get.docker.com -o get-docker.sh
             sudo sh get-docker.sh
             sudo usermod -aG docker ubuntu
+            newgrp docker
           fi
           
-          # Docker Compose 설치 확인
+          # Docker Compose 설치 확인  
           if ! command -v docker-compose &> /dev/null; then
             echo "Installing Docker Compose..."
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
           fi
           
-          # 기존 컨테이너 중지
+          # 배포 디렉토리로 이동
           cd /tmp/carefreepass || exit 1
-          docker-compose -f docker-compose.prod.yml down || true
           
-          # .env 파일 복사
-          cp /opt/carefreepass/.env . || echo "Warning: .env not found"
+          # .env 파일 복사 (필수)
+          if [ -f /opt/carefreepass/.env ]; then
+            cp /opt/carefreepass/.env .
+            echo "✅ .env file copied"
+          else
+            echo "❌ .env file not found at /opt/carefreepass/.env"
+            exit 1
+          fi
           
-          # Docker 이미지 빌드 및 실행
-          docker-compose -f docker-compose.prod.yml up -d --build
+          # 기존 컨테이너 중지
+          sudo docker-compose -f docker-compose.prod.yml down || true
+          
+          # Docker 이미지 빌드 및 실행 (sudo 사용)
+          sudo docker-compose -f docker-compose.prod.yml up -d --build
 
     - name: Health Check
       uses: appleboy/ssh-action@v1.0.0
@@ -142,7 +151,7 @@ jobs:
               # Docker 컨테이너 정보 출력
               echo "--- Deployment Info ---"
               echo "Time: $(date)"
-              echo "Container status: $(docker-compose -f docker-compose.prod.yml ps)"
+              echo "Container status: $(sudo docker-compose -f docker-compose.prod.yml ps)"
               echo "Port 8080 status: $(netstat -tlnp 2>/dev/null | grep :8080 || echo 'Not found')"
               
               # 간단한 API 테스트
@@ -158,9 +167,9 @@ jobs:
           
           echo "❌ Health check failed after 2 minutes"
           echo "--- Container Status ---"
-          docker-compose -f docker-compose.prod.yml ps
+          sudo docker-compose -f docker-compose.prod.yml ps
           
           echo "--- Container Logs ---"
-          docker-compose -f docker-compose.prod.yml logs --tail=50
+          sudo docker-compose -f docker-compose.prod.yml logs --tail=50
           
           exit 1
