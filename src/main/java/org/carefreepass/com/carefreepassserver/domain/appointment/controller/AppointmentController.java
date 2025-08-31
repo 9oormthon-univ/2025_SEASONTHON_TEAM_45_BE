@@ -41,10 +41,8 @@ public class AppointmentController implements AppointmentDocs {
                     request.getMemberId(),
                     request.getHospitalName(),
                     request.getDepartment(),
-                    request.getDoctorName(),
                     request.getAppointmentDate(),
-                    request.getAppointmentTime(),
-                    request.getRoomNumber()
+                    request.getAppointmentTime()
             );
 
             return ApiResponseTemplate.ok()
@@ -198,10 +196,8 @@ public class AppointmentController implements AppointmentDocs {
                     appointmentId,
                     request.getHospitalName(),
                     request.getDepartment(),
-                    request.getDoctorName(),
                     request.getAppointmentDate(),
-                    request.getAppointmentTime(),
-                    request.getRoomNumber()
+                    request.getAppointmentTime()
             );
 
             return ApiResponseTemplate.ok()
@@ -224,57 +220,29 @@ public class AppointmentController implements AppointmentDocs {
     }
 
     /**
-     * 의사별 예약 가능 시간을 조회합니다.
+     * 진료과별 예약 가능 시간을 조회합니다.
      * 
-     * @param doctorName 의사 이름
+     * @param department 진료과
      * @param date 예약 날짜 (yyyy-MM-dd 형식)
      * @return 예약 가능한 시간 목록
      */
-    @GetMapping("/available-times/doctor")
-    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByDoctor(
-            @RequestParam String doctorName,
+    @GetMapping("/available-times/department")
+    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByDepartment(
+            @RequestParam String department,
             @RequestParam LocalDate date) {
         try {
-            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByDoctor(doctorName, date);
+            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByDepartment(department, date);
             
             return ApiResponseTemplate.ok()
                     .code("APPOINTMENT_2008")
-                    .message("의사별 예약 가능 시간 조회가 완료되었습니다.")
+                    .message("진료과별 예약 가능 시간 조회가 완료되었습니다.")
                     .body(availableTimes);
 
         } catch (Exception e) {
-            log.error("Failed to get available times by doctor: {} for date: {}", doctorName, date, e);
+            log.error("Failed to get available times by department: {} for date: {}", department, date, e);
             return ApiResponseTemplate.error()
                     .code("APPOINTMENT_5008")
-                    .message("의사별 예약 가능 시간 조회에 실패했습니다.")
-                    .build();
-        }
-    }
-
-    /**
-     * 진료실별 예약 가능 시간을 조회합니다.
-     * 
-     * @param roomNumber 진료실 번호
-     * @param date 예약 날짜 (yyyy-MM-dd 형식)
-     * @return 예약 가능한 시간 목록
-     */
-    @GetMapping("/available-times/room")
-    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByRoom(
-            @RequestParam String roomNumber,
-            @RequestParam LocalDate date) {
-        try {
-            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByRoom(roomNumber, date);
-            
-            return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2009")
-                    .message("진료실별 예약 가능 시간 조회가 완료되었습니다.")
-                    .body(availableTimes);
-
-        } catch (Exception e) {
-            log.error("Failed to get available times by room: {} for date: {}", roomNumber, date, e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5009")
-                    .message("진료실별 예약 가능 시간 조회에 실패했습니다.")
+                    .message("진료과별 예약 가능 시간 조회에 실패했습니다.")
                     .build();
         }
     }

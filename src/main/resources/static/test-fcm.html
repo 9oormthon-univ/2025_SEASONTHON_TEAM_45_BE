@@ -409,11 +409,17 @@
                 </div>
                 <div class="form-group">
                     <label for="department">진료과</label>
-                    <input type="text" id="department" placeholder="내과" value="내과">
-                </div>
-                <div class="form-group">
-                    <label for="doctorName">의사명</label>
-                    <input type="text" id="doctorName" placeholder="김의사" value="김의사">
+                    <select id="department">
+                        <option value="내과">내과</option>
+                        <option value="정형외과">정형외과</option>
+                        <option value="피부과">피부과</option>
+                        <option value="이비인후과">이비인후과</option>
+                        <option value="안과">안과</option>
+                        <option value="산부인과">산부인과</option>
+                        <option value="소아과">소아과</option>
+                        <option value="정신과">정신과</option>
+                        <option value="치과">치과</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="appointmentDate">예약 날짜</label>
@@ -422,10 +428,6 @@
                 <div class="form-group">
                     <label for="appointmentTime">예약 시간</label>
                     <input type="time" id="appointmentTime" value="10:30">
-                </div>
-                <div class="form-group">
-                    <label for="roomNumber">진료실</label>
-                    <input type="text" id="roomNumber" placeholder="2번 진료실" value="2번 진료실">
                 </div>
                 <button class="btn success" onclick="createAppointment()">예약 생성</button>
                 <div id="appointmentResponse"></div>
@@ -476,14 +478,13 @@
                         <th>병원</th>
                         <th>진료과</th>
                         <th>예약시간</th>
-                        <th>진료실</th>
                         <th>상태</th>
                         <th>액션</th>
                     </tr>
                 </thead>
                 <tbody id="appointmentsBody">
                     <tr>
-                        <td colspan="8" style="text-align: center; color: #666;">목록을 불러오려면 새로고침 버튼을 클릭하세요</td>
+                        <td colspan="7" style="text-align: center; color: #666;">목록을 불러오려면 새로고침 버튼을 클릭하세요</td>
                     </tr>
                 </tbody>
             </table>
@@ -602,10 +603,8 @@
                 memberId: parseInt(document.getElementById('appointmentMemberId').value),
                 hospitalName: document.getElementById('hospitalName').value,
                 department: document.getElementById('department').value,
-                doctorName: document.getElementById('doctorName').value,
                 appointmentDate: document.getElementById('appointmentDate').value,
-                appointmentTime: document.getElementById('appointmentTime').value,
-                roomNumber: document.getElementById('roomNumber').value
+                appointmentTime: document.getElementById('appointmentTime').value
             };
 
             if (!data.memberId || !data.hospitalName || !data.department || !data.appointmentDate || !data.appointmentTime) {
@@ -648,12 +647,12 @@
                         tbody.appendChild(row);
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">오늘 예약된 환자가 없습니다</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">오늘 예약된 환자가 없습니다</td></tr>';
                 }
             } catch (error) {
                 console.error('예약 목록 로드 실패:', error);
                 const tbody = document.getElementById('appointmentsBody');
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #f56565;">목록을 불러오는데 실패했습니다</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #f56565;">목록을 불러오는데 실패했습니다</td></tr>';
             }
         }
 
@@ -670,7 +669,6 @@
                 <td>${appointment.hospitalName}</td>
                 <td>${appointment.department}</td>
                 <td>${appointment.appointmentTime}</td>
-                <td>${appointment.roomNumber || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${appointment.statusDescription}</span></td>
                 <td>
                     <button class="btn call-btn ${appointment.canCall ? 'danger' : ''}" 
@@ -681,7 +679,7 @@
                     </button>
                     <br>
                     <button class="btn call-btn" 
-                            onclick="showUpdateModal(${appointment.appointmentId}, '${appointment.hospitalName}', '${appointment.department}', '${appointment.doctorName || ''}', '${appointment.appointmentDate}', '${appointment.appointmentTime}', '${appointment.roomNumber || ''}')"
+                            onclick="showUpdateModal(${appointment.appointmentId}, '${appointment.hospitalName}', '${appointment.department}', '${appointment.appointmentDate}', '${appointment.appointmentTime}')"
                             style="background: #3182ce; font-size: 10px; padding: 4px 8px; margin-right: 5px;">
                         ✏️ 수정
                     </button>
@@ -708,7 +706,7 @@
                     },
                     body: JSON.stringify({
                         appointmentId: appointmentId,
-                        roomNumber: null
+                        roomNumber: "진료실"
                     })
                 });
 
@@ -781,7 +779,7 @@
         }
 
         // 예약 수정 모달 관련 함수들
-        function showUpdateModal(appointmentId, hospitalName, department, doctorName, appointmentDate, appointmentTime, roomNumber) {
+        function showUpdateModal(appointmentId, hospitalName, department, appointmentDate, appointmentTime) {
             if (document.getElementById('updateModal')) {
                 document.getElementById('updateModal').remove();
             }
@@ -805,12 +803,17 @@
                     
                     <div class="form-group">
                         <label>진료과</label>
-                        <input type="text" id="updateDepartment" value="${department}">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>의사명</label>
-                        <input type="text" id="updateDoctorName" value="${doctorName}">
+                        <select id="updateDepartment">
+                            <option value="내과" ${department === '내과' ? 'selected' : ''}>내과</option>
+                            <option value="정형외과" ${department === '정형외과' ? 'selected' : ''}>정형외과</option>
+                            <option value="피부과" ${department === '피부과' ? 'selected' : ''}>피부과</option>
+                            <option value="이비인후과" ${department === '이비인후과' ? 'selected' : ''}>이비인후과</option>
+                            <option value="안과" ${department === '안과' ? 'selected' : ''}>안과</option>
+                            <option value="산부인과" ${department === '산부인과' ? 'selected' : ''}>산부인과</option>
+                            <option value="소아과" ${department === '소아과' ? 'selected' : ''}>소아과</option>
+                            <option value="정신과" ${department === '정신과' ? 'selected' : ''}>정신과</option>
+                            <option value="치과" ${department === '치과' ? 'selected' : ''}>치과</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -821,11 +824,6 @@
                     <div class="form-group">
                         <label>예약 시간</label>
                         <input type="time" id="updateAppointmentTime" value="${appointmentTime}">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>진료실</label>
-                        <input type="text" id="updateRoomNumber" value="${roomNumber}">
                     </div>
                     
                     <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -861,10 +859,8 @@
             const data = {
                 hospitalName: document.getElementById('updateHospitalName').value,
                 department: document.getElementById('updateDepartment').value,
-                doctorName: document.getElementById('updateDoctorName').value,
                 appointmentDate: document.getElementById('updateAppointmentDate').value,
-                appointmentTime: document.getElementById('updateAppointmentTime').value,
-                roomNumber: document.getElementById('updateRoomNumber').value
+                appointmentTime: document.getElementById('updateAppointmentTime').value
             };
 
             if (!data.hospitalName || !data.department || !data.appointmentDate || !data.appointmentTime) {
