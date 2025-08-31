@@ -1,5 +1,5 @@
 # 프리티어 t2.micro 최적화 Dockerfile
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre
 
 # 작업 디렉토리 설정
 WORKDIR /app
