@@ -17,10 +17,8 @@ public class AppointmentResponse {
     private String memberName;
     private String hospitalName;
     private String department;
-    private String doctorName;
     private LocalDate appointmentDate;
     private LocalTime appointmentTime;
-    private String roomNumber;
     private String status;
     private String statusDescription;
     private boolean canCall;
@@ -31,10 +29,8 @@ public class AppointmentResponse {
                 appointment.getMember().getName(),
                 appointment.getHospitalName(),
                 appointment.getDepartment(),
-                appointment.getDoctorName(),
                 appointment.getAppointmentDate(),
                 appointment.getAppointmentTime(),
-                appointment.getRoomNumber(),
                 appointment.getStatus().name(),
                 appointment.getStatus().getDescription(),
                 appointment.canCall()

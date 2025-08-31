@@ -20,13 +20,9 @@ public class AppointmentUpdateRequest {
     @NotBlank(message = "진료과는 필수입니다.")
     private String department;
 
-    private String doctorName;
-
     @NotNull(message = "예약 날짜는 필수입니다.")
     private LocalDate appointmentDate;
 
     @NotNull(message = "예약 시간은 필수입니다.")
     private LocalTime appointmentTime;
-
-    private String roomNumber;
 }
