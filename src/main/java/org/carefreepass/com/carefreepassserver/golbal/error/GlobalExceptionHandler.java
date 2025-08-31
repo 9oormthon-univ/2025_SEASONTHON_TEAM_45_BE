@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
 
         log.error("Validation error for field {}: {}", fieldError.getField(), fieldError.getDefaultMessage());
         return ApiResponseTemplate.error()
-                .code(ErrorCode.BAD_REQUEST.getCode())
+                .code(ErrorCode.REQUIRED_FIELD_MISSING.getCode())
                 .message(String.format("%s. (%s)", fieldError.getDefaultMessage(), fieldError.getField()))
                 .body(null);
 

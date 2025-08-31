@@ -12,6 +12,8 @@ import org.carefreepass.com.carefreepassserver.domain.notification.entity.Notifi
 import org.carefreepass.com.carefreepassserver.domain.notification.repository.DeviceTokenRepository;
 import org.carefreepass.com.carefreepassserver.domain.notification.repository.NotificationHistoryRepository;
 import org.carefreepass.com.carefreepassserver.golbal.domain.Status;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
+import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,13 +40,13 @@ public class NotificationService {
      * @param memberId 환자 ID
      * @param fcmToken FCM 토큰 문자열
      * @param deviceType 디바이스 타입 (ANDROID, IOS 등)
-     * @throws IllegalArgumentException 존재하지 않는 회원인 경우
+     * @throws BusinessException 존재하지 않는 회원인 경우 (MEMBER_NOT_FOUND)
      */
     @Transactional
     public void registerDeviceToken(Long memberId, String fcmToken, String deviceType) {
         // 회원 존재 여부 검증
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 기존 토큰들을 모두 비활성화 (한 환자당 하나의 활성 토큰만 유지)
         deviceTokenRepository.deactivateAllTokensByMemberId(memberId, Status.INACTIVE);
@@ -110,7 +112,7 @@ public class NotificationService {
      * @param roomNumber 진료실 번호
      * @param appointmentId 예약 ID (로그용)
      * @return 알림 전송 성공 여부
-     * @throws IllegalStateException 활성 FCM 토큰이 없는 경우
+     * @throws BusinessException 활성 FCM 토큰이 없는 경우 (DEVICE_TOKEN_NOT_FOUND)
      */
     @Transactional
     public boolean sendPatientCall(Long memberId, String memberName, String roomNumber, Long appointmentId) {
@@ -118,7 +120,7 @@ public class NotificationService {
         Optional<DeviceToken> deviceToken = deviceTokenRepository.findActiveTokenByMemberId(memberId, Status.ACTIVE);
 
         if (deviceToken.isEmpty()) {
-            throw new IllegalStateException("환자의 FCM 토큰이 없습니다.");
+            throw new BusinessException(ErrorCode.DEVICE_TOKEN_NOT_FOUND);
         }
 
         // 알림 메시지 구성
