@@ -40,6 +40,8 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers("/api/v1/notifications/**", "/api/v1/appointments/**", "/api/v1/members/**")
                                         .permitAll()
+                                        .requestMatchers("/api/v1/chat/**", "/api/v1/test/**")
+                                        .permitAll()
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(

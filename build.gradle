@@ -55,6 +55,12 @@ dependencies {
     
     // .env file support
     implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+    
+    // WebSocket for real-time chat
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
+    // OpenAI API client
+    implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
 }
 
 tasks.named('test') {
