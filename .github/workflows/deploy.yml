@@ -81,7 +81,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        timeout: 60s
+        timeout: 300s
         script: |
           # 애플리케이션 디렉토리 생성
           sudo mkdir -p /opt/carefreepass
@@ -120,7 +120,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        timeout: 60s
+        timeout: 300s
         script: |
           # JAR 파일 이동
           sudo mv /tmp/*.jar /opt/carefreepass/carefreepass-server.jar
@@ -169,7 +169,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        timeout: 60s
+        timeout: 300s
         script: |
           echo "Waiting for application to be ready..."
           
