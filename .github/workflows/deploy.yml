@@ -83,24 +83,15 @@ jobs:
         port: 22
         timeout: 300s
         script: |
-          # 애플리케이션 디렉토리 생성
-          sudo mkdir -p /opt/carefreepass
-          sudo chown $USER:$USER /opt/carefreepass
-          
-          # 기존 프로세스 종료 (있다면)
+          # 기존 프로세스 종료
           sudo pkill -f 'carefreepass.*jar' || true
+          sleep 3
           
-          # 잠시 대기
-          sleep 5
+          # 디렉토리 준비
+          mkdir -p /opt/carefreepass || sudo mkdir -p /opt/carefreepass
           
-          # 백업 및 정리
-          if [ -f /opt/carefreepass/carefreepass-server.jar ]; then
-            mv /opt/carefreepass/carefreepass-server.jar /opt/carefreepass/carefreepass-server-backup-${{ steps.current-time.outputs.formattedTime }}.jar
-          fi
-          
-          # 오래된 백업 파일 삭제 (최근 5개만 보관)
-          cd /opt/carefreepass
-          ls -t carefreepass-server-backup-*.jar 2>/dev/null | tail -n +6 | xargs rm -f || true
+          # 간단한 백업
+          [ -f /opt/carefreepass/carefreepass-server.jar ] && mv /opt/carefreepass/carefreepass-server.jar /opt/carefreepass/backup.jar || true
 
     - name: Copy JAR to EC2
       uses: appleboy/scp-action@v0.1.7
@@ -142,7 +133,7 @@ jobs:
           
           # JVM 옵션 로드 및 애플리케이션 시작 (t2.micro 최적화)
           cd /opt/carefreepass
-          JVM_OPTS=$(cat jvm.conf 2>/dev/null || echo "-Xms256m -Xmx768m -XX:+UseG1GC")
+          JVM_OPTS=$(cat jvm.conf 2>/dev/null || echo "-Xms128m -Xmx400m -XX:+UseG1GC -XX:MaxGCPauseMillis=100")
           
           nohup java $JVM_OPTS -jar \
             -Dspring.profiles.active=datasource \
