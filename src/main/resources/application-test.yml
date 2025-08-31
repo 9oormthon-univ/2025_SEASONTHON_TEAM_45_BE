@@ -1,0 +1,33 @@
+# 테스트 환경 전용 설정
+spring:
+  config:
+    activate:
+      on-profile: "test"
+  
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+    open-in-view: false
+  
+  h2:
+    console:
+      enabled: true
+
+# 테스트 로깅 설정 (최소화)
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.hibernate.type: warn
+    org.carefreepass: info
+    org.springframework.web: warn
+    org.springframework.security: warn
