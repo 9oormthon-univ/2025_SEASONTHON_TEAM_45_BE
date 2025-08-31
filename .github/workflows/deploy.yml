@@ -74,93 +74,59 @@ jobs:
         format: YYYY-MM-DD-HH-mm-ss
         utcOffset: "+09:00"
     
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        timeout: 60s
-        script: |
-          # 애플리케이션 디렉토리 생성
-          sudo mkdir -p /opt/carefreepass
-          sudo chown $USER:$USER /opt/carefreepass
-          
-          # 기존 프로세스 종료 (있다면)
-          sudo pkill -f 'carefreepass.*jar' || true
-          
-          # 잠시 대기
-          sleep 5
-          
-          # 백업 및 정리
-          if [ -f /opt/carefreepass/carefreepass-server.jar ]; then
-            mv /opt/carefreepass/carefreepass-server.jar /opt/carefreepass/carefreepass-server-backup-${{ steps.current-time.outputs.formattedTime }}.jar
-          fi
-          
-          # 오래된 백업 파일 삭제 (최근 5개만 보관)
-          cd /opt/carefreepass
-          ls -t carefreepass-server-backup-*.jar 2>/dev/null | tail -n +6 | xargs rm -f || true
-
-    - name: Copy JAR to EC2
+    - name: Copy deployment files to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        source: "build/libs/*.jar"
-        target: "/tmp/"
-        strip_components: 2
+        source: "Dockerfile,docker-compose.prod.yml,build/libs/*.jar"
+        target: "/tmp/carefreepass/"
+        strip_components: 0
 
-    - name: Start Application
+    - name: Deploy with Docker
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        timeout: 60s
+        timeout: 300s
         script: |
-          # JAR 파일 이동
-          sudo mv /tmp/*.jar /opt/carefreepass/carefreepass-server.jar
-          
-          # 환경 변수 파일이 있는지 확인
-          if [ ! -f /opt/carefreepass/.env ]; then
-            echo "Warning: .env file not found at /opt/carefreepass/.env"
-            exit 1
-          else
-            echo "✅ .env file found"
+          # Docker 설치 확인
+          if ! command -v docker &> /dev/null; then
+            echo "Installing Docker..."
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            sudo usermod -aG docker ubuntu
+            newgrp docker
           fi
           
-          # Java 프로세스 확인
-          if ! java -version 2>&1 | grep -q "21"; then
-            echo "Java 21 not found, installing..."
-            sudo apt update
-            sudo apt install -y openjdk-21-jdk
+          # Docker Compose 설치 확인  
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Installing Docker Compose..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
           fi
           
-          # JVM 옵션 로드 및 애플리케이션 시작 (t2.micro 최적화)
-          cd /opt/carefreepass
-          JVM_OPTS=$(cat jvm.conf 2>/dev/null || echo "-Xms256m -Xmx768m -XX:+UseG1GC")
+          # 배포 디렉토리로 이동
+          cd /tmp/carefreepass || exit 1
           
-          nohup java $JVM_OPTS -jar \
-            -Dspring.profiles.active=datasource \
-            -Dserver.port=8080 \
-            carefreepass-server.jar > application.log 2>&1 &
-          
-          # 프로세스 시작 확인
-          sleep 10
-          
-          if pgrep -f 'carefreepass.*jar' > /dev/null; then
-            echo "✅ Application started successfully"
-            echo "Process ID: $(pgrep -f 'carefreepass.*jar')"
+          # .env 파일 복사 (필수)
+          if [ -f /opt/carefreepass/.env ]; then
+            cp /opt/carefreepass/.env .
+            echo "✅ .env file copied"
           else
-            echo "❌ Failed to start application"
-            echo "--- Last 20 lines of log ---"
-            tail -n 20 application.log || echo "No log file found"
+            echo "❌ .env file not found at /opt/carefreepass/.env"
             exit 1
           fi
+          
+          # 기존 컨테이너 중지
+          sudo docker-compose -f docker-compose.prod.yml down || true
+          
+          # Docker 이미지 빌드 및 실행 (sudo 사용)
+          sudo docker-compose -f docker-compose.prod.yml up -d --build
 
     - name: Health Check
       uses: appleboy/ssh-action@v1.0.0
@@ -169,20 +135,23 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
-        timeout: 60s
+        timeout: 300s
         script: |
-          echo "Waiting for application to be ready..."
+          echo "Waiting for Docker container to be ready..."
+          
+          # 컨테이너 상태 확인
+          cd /tmp/carefreepass
           
           # 최대 120초 대기 (2분)
           for i in {1..24}; do
             if curl -f http://localhost:8080/api/v1/test/health > /dev/null 2>&1; then
               echo "✅ Health check passed!"
-              echo "🚀 Deployment successful!"
+              echo "🚀 Docker deployment successful!"
               
-              # 애플리케이션 정보 출력
+              # Docker 컨테이너 정보 출력
               echo "--- Deployment Info ---"
               echo "Time: $(date)"
-              echo "Process ID: $(pgrep -f 'carefreepass.*jar')"
+              echo "Container status: $(sudo docker-compose -f docker-compose.prod.yml ps)"
               echo "Port 8080 status: $(netstat -tlnp 2>/dev/null | grep :8080 || echo 'Not found')"
               
               # 간단한 API 테스트
@@ -197,13 +166,10 @@ jobs:
           done
           
           echo "❌ Health check failed after 2 minutes"
-          echo "--- Process Status ---"
-          pgrep -f 'carefreepass.*jar' || echo "No process found"
+          echo "--- Container Status ---"
+          sudo docker-compose -f docker-compose.prod.yml ps
           
-          echo "--- Port Status ---"
-          netstat -tlnp 2>/dev/null | grep :8080 || echo "Port 8080 not in use"
-          
-          echo "--- Recent Logs ---"
-          tail -n 50 /opt/carefreepass/application.log || echo "No log file found"
+          echo "--- Container Logs ---"
+          sudo docker-compose -f docker-compose.prod.yml logs --tail=50
           
           exit 1
