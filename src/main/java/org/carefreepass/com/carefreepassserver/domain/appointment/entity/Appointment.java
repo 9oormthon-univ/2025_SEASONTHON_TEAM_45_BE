@@ -40,46 +40,35 @@ public class Appointment extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private String department;
 
-    @Column(length = 50)
-    private String doctorName;
-
     @Column(nullable = false)
     private LocalDate appointmentDate;
 
     @Column(nullable = false)
     private LocalTime appointmentTime;
 
-    @Column(length = 20)
-    private String roomNumber;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AppointmentStatus status;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private Appointment(Member member, String hospitalName, String department, String doctorName,
-                       LocalDate appointmentDate, LocalTime appointmentTime, String roomNumber) {
+    private Appointment(Member member, String hospitalName, String department,
+                       LocalDate appointmentDate, LocalTime appointmentTime) {
         this.member = member;
         this.hospitalName = hospitalName;
         this.department = department;
-        this.doctorName = doctorName;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
-        this.roomNumber = roomNumber;
         this.status = AppointmentStatus.BOOKED;
     }
 
     public static Appointment createAppointment(Member member, String hospitalName, String department,
-                                              String doctorName, LocalDate appointmentDate, LocalTime appointmentTime,
-                                              String roomNumber) {
+                                              LocalDate appointmentDate, LocalTime appointmentTime) {
         return Appointment.builder()
                 .member(member)
                 .hospitalName(hospitalName)
                 .department(department)
-                .doctorName(doctorName)
                 .appointmentDate(appointmentDate)
                 .appointmentTime(appointmentTime)
-                .roomNumber(roomNumber)
                 .build();
     }
 
@@ -99,13 +88,11 @@ public class Appointment extends BaseTimeEntity {
         return this.status != AppointmentStatus.COMPLETED && this.status != AppointmentStatus.CANCELLED;
     }
 
-    public void updateAppointment(String hospitalName, String department, String doctorName,
-                                LocalDate appointmentDate, LocalTime appointmentTime, String roomNumber) {
+    public void updateAppointment(String hospitalName, String department,
+                                LocalDate appointmentDate, LocalTime appointmentTime) {
         this.hospitalName = hospitalName;
         this.department = department;
-        this.doctorName = doctorName;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
-        this.roomNumber = roomNumber;
     }
 }

@@ -36,17 +36,15 @@ public class AppointmentService {
      * @param memberId 환자 ID
      * @param hospitalName 병원명
      * @param department 진료과
-     * @param doctorName 의사명
      * @param appointmentDate 예약 날짜
      * @param appointmentTime 예약 시간
-     * @param roomNumber 진료실 번호
      * @return 생성된 예약 ID
      * @throws IllegalArgumentException 존재하지 않는 회원인 경우
      * @throws IllegalStateException 해당 날짜에 이미 예약이 있는 경우
      */
     @Transactional
     public Long createAppointment(Long memberId, String hospitalName, String department,
-                                String doctorName, LocalDate appointmentDate, LocalTime appointmentTime, String roomNumber) {
+                                LocalDate appointmentDate, LocalTime appointmentTime) {
         // 회원 존재 여부 검증
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
@@ -56,23 +54,16 @@ public class AppointmentService {
             throw new IllegalStateException("해당 날짜에 이미 예약이 있습니다.");
         }
 
-        // 2. 의사별 시간 충돌 검사
-        if (appointmentRepository.existsByDoctorNameAndAppointmentDateAndAppointmentTimeAndStatus(
-                doctorName, appointmentDate, appointmentTime, AppointmentStatus.BOOKED)) {
-            throw new IllegalStateException(String.format("의사 '%s'는 %s %s 시간에 이미 예약이 있습니다.", 
-                    doctorName, appointmentDate, appointmentTime));
-        }
-
-        // 3. 진료실별 시간 충돌 검사  
-        if (appointmentRepository.existsByRoomNumberAndAppointmentDateAndAppointmentTimeAndStatus(
-                roomNumber, appointmentDate, appointmentTime, AppointmentStatus.BOOKED)) {
-            throw new IllegalStateException(String.format("진료실 '%s'는 %s %s 시간에 이미 예약이 있습니다.", 
-                    roomNumber, appointmentDate, appointmentTime));
+        // 2. 진료과별 시간 충돌 검사 (같은 진료과, 같은 시간에 예약이 있는지 확인)
+        if (appointmentRepository.existsByDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
+                department, appointmentDate, appointmentTime, AppointmentStatus.BOOKED)) {
+            throw new IllegalStateException(String.format("%s는 %s %s 시간에 이미 예약이 있습니다.", 
+                    department, appointmentDate, appointmentTime));
         }
 
         // 예약 엔티티 생성 (초기 상태: BOOKED)
         Appointment appointment = Appointment.createAppointment(
-                member, hospitalName, department, doctorName, appointmentDate, appointmentTime, roomNumber
+                member, hospitalName, department, appointmentDate, appointmentTime
         );
 
         // 예약 저장
@@ -151,7 +142,7 @@ public class AppointmentService {
 
     @Transactional
     public void updateAppointment(Long appointmentId, String hospitalName, String department, 
-                                String doctorName, LocalDate appointmentDate, LocalTime appointmentTime, String roomNumber) {
+                                LocalDate appointmentDate, LocalTime appointmentTime) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
 
@@ -159,7 +150,7 @@ public class AppointmentService {
             throw new IllegalStateException("완료되거나 취소된 예약은 수정할 수 없습니다.");
         }
 
-        appointment.updateAppointment(hospitalName, department, doctorName, appointmentDate, appointmentTime, roomNumber);
+        appointment.updateAppointment(hospitalName, department, appointmentDate, appointmentTime);
         log.info("Appointment updated: {} (ID: {})", appointment.getMember().getName(), appointmentId);
     }
 
@@ -184,8 +175,8 @@ public class AppointmentService {
             throw new IllegalStateException("호출할 수 없는 예약 상태입니다.");
         }
 
-        // 진료실 번호 결정 (사용자 지정 > 예약 기본값)
-        String roomNumber = customRoomNumber != null ? customRoomNumber : appointment.getRoomNumber();
+        // 진료실 번호는 단순히 사용자 지정이거나 기본값 사용
+        String roomNumber = customRoomNumber != null ? customRoomNumber : "진료실";
         
         // FCM 푸시 알림 전송 시도
         boolean success = notificationService.sendPatientCall(
@@ -214,50 +205,28 @@ public class AppointmentService {
     }
 
     /**
-     * 의사별 예약 가능 시간을 조회합니다.
+     * 진료과별 예약 가능 시간을 조회합니다.
      * 
-     * @param doctorName 의사 이름
+     * @param department 진료과
      * @param appointmentDate 예약 날짜
      * @return 예약 가능한 시간 목록
      */
-    public List<LocalTime> getAvailableTimesByDoctor(String doctorName, LocalDate appointmentDate) {
+    public List<LocalTime> getAvailableTimesByDepartment(String department, LocalDate appointmentDate) {
         // 기본 진료 시간 (09:00 ~ 17:00, 30분 간격)
         List<LocalTime> allTimes = generateTimeSlots(LocalTime.of(9, 0), LocalTime.of(17, 0), 30);
         
         // 이미 예약된 시간 조회
-        List<LocalTime> bookedTimes = appointmentRepository.findBookedTimesByDoctorAndDate(
-                doctorName, appointmentDate, AppointmentStatus.BOOKED);
+        List<LocalTime> bookedTimes = appointmentRepository.findBookedTimesByDepartmentAndDate(
+                department, appointmentDate, AppointmentStatus.BOOKED);
         
         // 예약 가능한 시간 = 전체 시간 - 예약된 시간
         List<LocalTime> availableTimes = new ArrayList<>(allTimes);
         availableTimes.removeAll(bookedTimes);
         
-        log.info("의사 '{}' {}일 예약 가능 시간: {}개", doctorName, appointmentDate, availableTimes.size());
+        log.info("진료과 '{}' {}일 예약 가능 시간: {}개", department, appointmentDate, availableTimes.size());
         return availableTimes;
     }
 
-    /**
-     * 진료실별 예약 가능 시간을 조회합니다.
-     * 
-     * @param roomNumber 진료실 번호
-     * @param appointmentDate 예약 날짜
-     * @return 예약 가능한 시간 목록
-     */
-    public List<LocalTime> getAvailableTimesByRoom(String roomNumber, LocalDate appointmentDate) {
-        // 기본 진료 시간 (09:00 ~ 17:00, 30분 간격)
-        List<LocalTime> allTimes = generateTimeSlots(LocalTime.of(9, 0), LocalTime.of(17, 0), 30);
-        
-        // 이미 예약된 시간 조회
-        List<LocalTime> bookedTimes = appointmentRepository.findBookedTimesByRoomAndDate(
-                roomNumber, appointmentDate, AppointmentStatus.BOOKED);
-        
-        // 예약 가능한 시간 = 전체 시간 - 예약된 시간
-        List<LocalTime> availableTimes = new ArrayList<>(allTimes);
-        availableTimes.removeAll(bookedTimes);
-        
-        log.info("진료실 '{}' {}일 예약 가능 시간: {}개", roomNumber, appointmentDate, availableTimes.size());
-        return availableTimes;
-    }
 
     /**
      * 지정된 시간 범위와 간격으로 시간 슬롯을 생성합니다.

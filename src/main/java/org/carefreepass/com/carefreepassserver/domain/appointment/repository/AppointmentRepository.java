@@ -19,19 +19,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT a FROM Appointment a JOIN FETCH a.member WHERE a.appointmentDate = :date ORDER BY a.appointmentTime")
     List<Appointment> findAllByAppointmentDate(@Param("date") LocalDate date);
 
-    // 같은 시간대 충돌 검사 (의사별)
-    boolean existsByDoctorNameAndAppointmentDateAndAppointmentTimeAndStatus(
-            String doctorName, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
+    // 같은 시간대 충돌 검사 (진료과별)
+    boolean existsByDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
+            String department, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
 
-    // 같은 시간대 충돌 검사 (진료실별)  
-    boolean existsByRoomNumberAndAppointmentDateAndAppointmentTimeAndStatus(
-            String roomNumber, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
-
-    // 예약 가능 시간 조회 (의사별)
-    @Query("SELECT a.appointmentTime FROM Appointment a WHERE a.doctorName = :doctorName AND a.appointmentDate = :date AND a.status = :status ORDER BY a.appointmentTime")
-    List<LocalTime> findBookedTimesByDoctorAndDate(@Param("doctorName") String doctorName, @Param("date") LocalDate date, @Param("status") AppointmentStatus status);
-
-    // 예약 가능 시간 조회 (진료실별)
-    @Query("SELECT a.appointmentTime FROM Appointment a WHERE a.roomNumber = :roomNumber AND a.appointmentDate = :date AND a.status = :status ORDER BY a.appointmentTime")
-    List<LocalTime> findBookedTimesByRoomAndDate(@Param("roomNumber") String roomNumber, @Param("date") LocalDate date, @Param("status") AppointmentStatus status);
+    // 예약 가능 시간 조회 (진료과별)
+    @Query("SELECT a.appointmentTime FROM Appointment a WHERE a.department = :department AND a.appointmentDate = :date AND a.status = :status ORDER BY a.appointmentTime")
+    List<LocalTime> findBookedTimesByDepartmentAndDate(@Param("department") String department, @Param("date") LocalDate date, @Param("status") AppointmentStatus status);
 }
