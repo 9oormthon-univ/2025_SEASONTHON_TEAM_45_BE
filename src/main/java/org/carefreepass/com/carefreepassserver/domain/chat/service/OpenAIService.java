@@ -7,6 +7,7 @@ import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.carefreepass.com.carefreepassserver.golbal.config.OpenAIProperties;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,42 +19,15 @@ import java.util.List;
 public class OpenAIService {
 
     private final OpenAiService openAiService;
+    private final OpenAIProperties openAIProperties;
 
-    private static final String SYSTEM_PROMPT = """
-        당신은 병원 예약을 도와주는 전문 의료 상담 AI입니다.
-        
-        역할:
-        1. 환자의 증상을 듣고 분석합니다
-        2. 적절한 진료과를 추천합니다
-        3. 예약 과정을 안내합니다
-        
-        규칙:
-        - 의학적 진단은 하지 마세요
-        - 진료과 추천에 그치세요
-        - 친근하고 전문적으로 응답하세요
-        - 응급상황시 응급실 방문을 권하세요
-        
-        진료과 목록:
-        - 내과: 감기, 발열, 복통, 소화불량, 고혈압, 당뇨 등
-        - 외과: 상처, 수술, 외상 등
-        - 정형외과: 관절, 뼈, 근육, 허리, 목 통증 등
-        - 피부과: 피부 질환, 알레르기, 여드름 등
-        - 이비인후과: 목, 귀, 코 관련 증상
-        - 안과: 눈 관련 증상
-        - 산부인과: 여성 질환
-        - 소아과: 어린이 관련
-        - 정신과: 우울, 불안, 스트레스
-        - 치과: 치아, 잇몸 관련
-        
-        항상 한국어로 응답하세요.
-        """;
 
     public String generateResponse(List<org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage> conversationHistory, String userMessage) {
         try {
             List<ChatMessage> messages = new ArrayList<>();
             
             // 시스템 프롬프트 추가
-            messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT));
+            messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), openAIProperties.getSystemPromptGeneral()));
             
             // 대화 히스토리 추가
             for (org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage msg : conversationHistory) {
@@ -67,10 +41,10 @@ public class OpenAIService {
             
             // ChatGPT API 호출
             ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model("gpt-3.5-turbo")
+                    .model(openAIProperties.getModel())
                     .messages(messages)
-                    .maxTokens(500)
-                    .temperature(0.7)
+                    .maxTokens(openAIProperties.getMaxTokensGeneral())
+                    .temperature(openAIProperties.getTemperatureGeneral())
                     .build();
                     
             ChatCompletionResult result = openAiService.createChatCompletion(request);
@@ -100,15 +74,15 @@ public class OpenAIService {
                 """.formatted(userMessage);
                 
             List<ChatMessage> messages = List.of(
-                new ChatMessage(ChatMessageRole.SYSTEM.value(), SYSTEM_PROMPT),
+                new ChatMessage(ChatMessageRole.SYSTEM.value(), openAIProperties.getSystemPromptAnalysis()),
                 new ChatMessage(ChatMessageRole.USER.value(), symptomAnalysisPrompt)
             );
             
             ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model("gpt-3.5-turbo")
+                    .model(openAIProperties.getModel())
                     .messages(messages)
-                    .maxTokens(300)
-                    .temperature(0.5)
+                    .maxTokens(openAIProperties.getMaxTokensAnalysis())
+                    .temperature(openAIProperties.getTemperatureAnalysis())
                     .build();
                     
             ChatCompletionResult result = openAiService.createChatCompletion(request);

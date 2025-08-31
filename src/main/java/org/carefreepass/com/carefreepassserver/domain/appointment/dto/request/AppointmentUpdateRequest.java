@@ -1,5 +1,6 @@
 package org.carefreepass.com.carefreepassserver.domain.appointment.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -14,15 +15,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppointmentUpdateRequest {
 
+    @Schema(description = "병원명", example = "서울대학교병원")
     @NotBlank(message = "병원명은 필수입니다.")
     private String hospitalName;
 
+    @Schema(description = "진료과", example = "내과")
     @NotBlank(message = "진료과는 필수입니다.")
     private String department;
 
+    @Schema(description = "예약 날짜", example = "2024-12-31")
     @NotNull(message = "예약 날짜는 필수입니다.")
     private LocalDate appointmentDate;
 
+    @Schema(description = "예약 시간", example = "14:30")
     @NotNull(message = "예약 시간은 필수입니다.")
     private LocalTime appointmentTime;
 }
