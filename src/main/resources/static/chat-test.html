@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 채팅봇 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .chat-header p {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        
+        .message.user {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+            margin-left: 20%;
+        }
+        
+        .message.ai {
+            background: #f1f3f4;
+            color: #333;
+            align-self: flex-start;
+            margin-right: 20%;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            align-self: center;
+            font-size: 0.9em;
+            border: 1px solid #ffeaa7;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .message-input {
+            flex: 1;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            padding: 12px 16px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+            max-height: 100px;
+        }
+        
+        .message-input:focus {
+            border-color: #667eea;
+        }
+        
+        .send-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+        
+        .send-button:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+        
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .typing-indicator {
+            align-self: flex-start;
+            margin-right: 20%;
+            padding: 12px 16px;
+            background: #f1f3f4;
+            border-radius: 18px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .member-id-input {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🏥 AI 병원 예약 도우미</h1>
+            <p>증상을 말씀해주시면 적절한 진료과를 안내해드려요</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                안녕하세요! AI 병원 예약 도우미입니다. 🤖<br>
+                어떤 증상으로 문의해주셨나요? 자세히 말씀해주시면 적절한 진료과를 추천해드리겠습니다.<br><br>
+                📋 <strong>예약 과정:</strong><br>
+                1️⃣ 증상 설명 → 진료과 추천<br>
+                2️⃣ 예약 날짜와 시간 알려주기<br>
+                3️⃣ 서울대병원 예약 완료! ✅
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="number" class="member-id-input" id="memberId" placeholder="회원 ID (테스트용)" value="1" style="flex: 1;">
+                <button onclick="checkServerHealth()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer;">서버 확인</button>
+                <button onclick="resetChat()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer;">초기화</button>
+            </div>
+            <div class="input-container">
+                <textarea class="message-input" id="messageInput" 
+                         placeholder="증상을 자세히 알려주세요... (예: 배가 아프고 속이 쓰려요, 무릎이 아파요)"
+                         rows="1"></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        const API_BASE = 'http://localhost:8080/api/v1/chat';
+        
+        // 자동 높이 조절
+        const messageInput = document.getElementById('messageInput');
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        
+        // 엔터키 전송
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        function addMessage(content, type) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = content.replace(/\n/g, '<br>');
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // API 헬스 체크 함수
+        async function checkServerHealth() {
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/test/health');
+                const data = await response.json();
+                console.log('Server health:', data);
+                addMessage('✅ 서버 연결 확인됨', 'system');
+                return true;
+            } catch (error) {
+                console.error('Server health check failed:', error);
+                addMessage('❌ 서버 연결 실패', 'system');
+                return false;
+            }
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const memberId = document.getElementById('memberId').value;
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            if (!memberId) {
+                alert('테스트를 위해 회원 ID를 입력해주세요.');
+                return;
+            }
+            
+            // UI 업데이트
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            sendButton.disabled = true;
+            showTypingIndicator();
+            
+            try {
+                let response;
+                let responseText = '';
+                
+                if (!currentSessionId) {
+                    console.log('Starting new chat session...');
+                    // 첫 메시지 - 세션 시작
+                    response = await fetch(`${API_BASE}/start`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            memberId: parseInt(memberId),
+                            initialMessage: message
+                        })
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    
+                    responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    if (!responseText) {
+                        throw new Error('서버에서 빈 응답을 받았습니다.');
+                    }
+                    
+                    const data = JSON.parse(responseText);
+                    console.log('Parsed data:', data);
+                    
+                    if (data.code && data.code.startsWith('CHAT_2')) {
+                        currentSessionId = data.data.sessionId;
+                        const aiMessages = data.data.messages.filter(msg => msg.senderType === 'AI');
+                        if (aiMessages.length > 0) {
+                            hideTypingIndicator();
+                            addMessage(aiMessages[aiMessages.length - 1].content, 'ai');
+                        }
+                    } else {
+                        throw new Error(data.message || '세션 시작 실패');
+                    }
+                } else {
+                    console.log('Sending message to existing session...');
+                    // 기존 세션에 메시지 전송
+                    response = await fetch(`${API_BASE}/message`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sessionId: currentSessionId,
+                            memberId: parseInt(memberId),
+                            content: message
+                        })
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    if (!responseText) {
+                        throw new Error('서버에서 빈 응답을 받았습니다.');
+                    }
+                    
+                    const data = JSON.parse(responseText);
+                    
+                    if (data.code && data.code.startsWith('CHAT_2')) {
+                        hideTypingIndicator();
+                        addMessage(data.data.content, 'ai');
+                    } else {
+                        throw new Error(data.message || '메시지 전송 실패');
+                    }
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Full error:', error);
+                addMessage(`❌ 오류 발생: ${error.message}`, 'system');
+                
+                if (error.message.includes('JSON')) {
+                    addMessage(`🔍 서버 응답: ${responseText.substring(0, 200)}...`, 'system');
+                }
+            } finally {
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+        
+        // 페이지 로드 시 input에 포커스
+        window.onload = function() {
+            messageInput.focus();
+        };
+        
+        // 세션 관리 함수들
+        function resetChat() {
+            currentSessionId = null;
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message ai">
+                    안녕하세요! AI 병원 예약 도우미입니다. 🤖<br>
+                    어떤 증상으로 문의해주셨나요? 자세히 말씀해주시면 적절한 진료과를 추천해드리겠습니다.<br><br>
+                    📋 <strong>예약 과정:</strong><br>
+                    1️⃣ 증상 설명 → 진료과 추천<br>
+                    2️⃣ 예약 날짜와 시간 알려주기<br>
+                    3️⃣ 서울대병원 예약 완료! ✅
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: CareFreePass-Server
+  profiles:
+    group:
+      local: "local, datasource"
+      dev: "dev, datasource"
+
+    include:
+      - datasource
+      - redis
+      - firebase
+      - security
+
+swagger:
+  version: ${SWAGGER_VERSION:0.0.1}
+  url: ${SWAGGER_URL:http://localhost:8080}
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY}
