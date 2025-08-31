@@ -1,0 +1,218 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+    
+    - name: Run tests
+      run: ./gradlew test
+    
+    - name: Generate test report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with:
+        name: Gradle Tests
+        path: build/test-results/test/*.xml
+        reporter: java-junit
+        fail-on-error: true
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+    
+    - name: Build JAR
+      run: ./gradlew bootJar
+    
+    - name: Get current time
+      uses: josStorer/get-current-time@v2
+      id: current-time
+      with:
+        format: YYYY-MM-DD-HH-mm-ss
+        utcOffset: "+09:00"
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        timeout: 60s
+        script: |
+          # 애플리케이션 디렉토리 생성
+          sudo mkdir -p /opt/carefreepass
+          sudo chown $USER:$USER /opt/carefreepass
+          
+          # 기존 프로세스 종료 (있다면)
+          sudo pkill -f 'carefreepass.*jar' || true
+          
+          # 잠시 대기
+          sleep 5
+          
+          # 백업 및 정리
+          if [ -f /opt/carefreepass/carefreepass-server.jar ]; then
+            mv /opt/carefreepass/carefreepass-server.jar /opt/carefreepass/carefreepass-server-backup-${{ steps.current-time.outputs.formattedTime }}.jar
+          fi
+          
+          # 오래된 백업 파일 삭제 (최근 5개만 보관)
+          cd /opt/carefreepass
+          ls -t carefreepass-server-backup-*.jar 2>/dev/null | tail -n +6 | xargs rm -f || true
+
+    - name: Copy JAR to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        source: "build/libs/*.jar"
+        target: "/tmp/"
+        strip_components: 2
+
+    - name: Start Application
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        timeout: 60s
+        script: |
+          # JAR 파일 이동
+          sudo mv /tmp/*.jar /opt/carefreepass/carefreepass-server.jar
+          
+          # 환경 변수 파일이 있는지 확인
+          if [ ! -f /opt/carefreepass/.env ]; then
+            echo "Warning: .env file not found at /opt/carefreepass/.env"
+            exit 1
+          else
+            echo "✅ .env file found"
+          fi
+          
+          # Java 프로세스 확인
+          if ! java -version 2>&1 | grep -q "21"; then
+            echo "Java 21 not found, installing..."
+            sudo apt update
+            sudo apt install -y openjdk-21-jdk
+          fi
+          
+          # JVM 옵션 로드 및 애플리케이션 시작 (t2.micro 최적화)
+          cd /opt/carefreepass
+          JVM_OPTS=$(cat jvm.conf 2>/dev/null || echo "-Xms256m -Xmx768m -XX:+UseG1GC")
+          
+          nohup java $JVM_OPTS -jar \
+            -Dspring.profiles.active=datasource \
+            -Dserver.port=8080 \
+            carefreepass-server.jar > application.log 2>&1 &
+          
+          # 프로세스 시작 확인
+          sleep 10
+          
+          if pgrep -f 'carefreepass.*jar' > /dev/null; then
+            echo "✅ Application started successfully"
+            echo "Process ID: $(pgrep -f 'carefreepass.*jar')"
+          else
+            echo "❌ Failed to start application"
+            echo "--- Last 20 lines of log ---"
+            tail -n 20 application.log || echo "No log file found"
+            exit 1
+          fi
+
+    - name: Health Check
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        timeout: 60s
+        script: |
+          echo "Waiting for application to be ready..."
+          
+          # 최대 120초 대기 (2분)
+          for i in {1..24}; do
+            if curl -f http://localhost:8080/api/v1/test/health > /dev/null 2>&1; then
+              echo "✅ Health check passed!"
+              echo "🚀 Deployment successful!"
+              
+              # 애플리케이션 정보 출력
+              echo "--- Deployment Info ---"
+              echo "Time: $(date)"
+              echo "Process ID: $(pgrep -f 'carefreepass.*jar')"
+              echo "Port 8080 status: $(netstat -tlnp 2>/dev/null | grep :8080 || echo 'Not found')"
+              
+              # 간단한 API 테스트
+              echo "--- API Test ---"
+              curl -s http://localhost:8080/api/v1/test/health | head -100
+              
+              exit 0
+            else
+              echo "Health check attempt $i failed, waiting 5 seconds..."
+              sleep 5
+            fi
+          done
+          
+          echo "❌ Health check failed after 2 minutes"
+          echo "--- Process Status ---"
+          pgrep -f 'carefreepass.*jar' || echo "No process found"
+          
+          echo "--- Port Status ---"
+          netstat -tlnp 2>/dev/null | grep :8080 || echo "Port 8080 not in use"
+          
+          echo "--- Recent Logs ---"
+          tail -n 50 /opt/carefreepass/application.log || echo "No log file found"
+          
+          exit 1
