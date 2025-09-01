@@ -2,11 +2,14 @@ package org.carefreepass.com.carefreepassserver.domain.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentCreateRequest;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.AppointmentService;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatSession;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.SymptomAnalysis;
 import org.carefreepass.com.carefreepassserver.domain.chat.repository.SymptomAnalysisRepository;
+import org.carefreepass.com.carefreepassserver.golbal.config.ChatProperties;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +24,7 @@ import java.util.Optional;
 @Slf4j
 public class AppointmentBookingService {
     
-    private static final String DEFAULT_HOSPITAL_NAME = "서울대병원";
-    
+    private final ChatProperties chatProperties;
     private final AppointmentService appointmentService;
     private final SymptomAnalysisRepository symptomAnalysisRepository;
     private final AppointmentInfoExtractor appointmentInfoExtractor;
@@ -52,7 +54,7 @@ public class AppointmentBookingService {
             
             return generateAppointmentSuccessMessage(appointmentInfo, appointmentId);
             
-        } catch (IllegalStateException e) {
+        } catch (BusinessException e) {
             return handleBusinessLogicError(e);
         } catch (Exception e) {
             return handleUnexpectedError(e);
@@ -60,17 +62,22 @@ public class AppointmentBookingService {
     }
     
     private Long createAppointment(ChatSession session, AppointmentInfo info) {
-        return appointmentService.createAppointment(
+        String hospitalName = info.getHospitalName() != null ? 
+            info.getHospitalName() : chatProperties.getDefaultHospitalName();
+            
+        AppointmentCreateRequest request = new AppointmentCreateRequest(
             session.getMember().getId(),
-            info.getHospitalName(),
+            hospitalName,
             info.getDepartment(),
             info.getAppointmentDate(),
             info.getAppointmentTime()
         );
+        
+        return appointmentService.createAppointment(request);
     }
     
-    private String handleBusinessLogicError(IllegalStateException e) {
-        return "죄송합니다. " + e.getMessage() + "\n다른 날짜나 시간을 선택해주시겠어요?";
+    private String handleBusinessLogicError(BusinessException e) {
+        return "죄송합니다. " + e.getErrorCode().getMessage() + "\n다른 날짜나 시간을 선택해주시겠어요?";
     }
     
     private String handleUnexpectedError(Exception e) {

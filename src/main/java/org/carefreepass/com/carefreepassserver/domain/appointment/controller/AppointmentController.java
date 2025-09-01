@@ -14,6 +14,7 @@ import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.A
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.Appointment;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.AppointmentStatus;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.AppointmentService;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.response.ApiResponseTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,23 +38,15 @@ public class AppointmentController implements AppointmentDocs {
     @PostMapping
     public ApiResponseTemplate<Long> createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
         try {
-            Long appointmentId = appointmentService.createAppointment(
-                    request.getMemberId(),
-                    request.getHospitalName(),
-                    request.getDepartment(),
-                    request.getAppointmentDate(),
-                    request.getAppointmentTime()
-            );
+            Long appointmentId = appointmentService.createAppointment(request);
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2001")
-                    .message("예약이 성공적으로 생성되었습니다.")
                     .body(appointmentId);
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_4001")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Failed to create appointment", e);
@@ -71,14 +64,12 @@ public class AppointmentController implements AppointmentDocs {
             appointmentService.checkinAppointment(request.getAppointmentId(), request.getMemberId());
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2002")
-                    .message("체크인이 완료되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_4002")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Failed to checkin appointment", e);
@@ -99,8 +90,6 @@ public class AppointmentController implements AppointmentDocs {
                     .toList();
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2003")
-                    .message("오늘 대기 환자 목록 조회가 완료되었습니다.")
                     .body(responses);
 
         } catch (Exception e) {
@@ -122,8 +111,6 @@ public class AppointmentController implements AppointmentDocs {
                     .toList();
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2004")
-                    .message("오늘 전체 예약 목록 조회가 완료되었습니다.")
                     .body(responses);
 
         } catch (Exception e) {
@@ -142,14 +129,12 @@ public class AppointmentController implements AppointmentDocs {
             appointmentService.deleteAppointment(appointmentId);
             
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2005")
-                    .message("예약이 성공적으로 삭제되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_4003")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
 
         } catch (Exception e) {
@@ -169,10 +154,13 @@ public class AppointmentController implements AppointmentDocs {
             appointmentService.updateAppointmentStatus(appointmentId, appointmentStatus);
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2006")
-                    .message("예약 상태가 성공적으로 변경되었습니다.")
                     .body("SUCCESS");
 
+        } catch (BusinessException e) {
+            return ApiResponseTemplate.error()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
+                    .build();
         } catch (IllegalArgumentException e) {
             return ApiResponseTemplate.error()
                     .code("APPOINTMENT_4004")
@@ -192,23 +180,15 @@ public class AppointmentController implements AppointmentDocs {
     public ApiResponseTemplate<String> updateAppointment(@PathVariable Long appointmentId, 
                                                        @Valid @RequestBody AppointmentUpdateRequest request) {
         try {
-            appointmentService.updateAppointment(
-                    appointmentId,
-                    request.getHospitalName(),
-                    request.getDepartment(),
-                    request.getAppointmentDate(),
-                    request.getAppointmentTime()
-            );
+            appointmentService.updateAppointment(appointmentId, request);
 
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2007")
-                    .message("예약이 성공적으로 수정되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_4005")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Failed to update appointment", e);
@@ -234,8 +214,6 @@ public class AppointmentController implements AppointmentDocs {
             List<LocalTime> availableTimes = appointmentService.getAvailableTimesByDepartment(department, date);
             
             return ApiResponseTemplate.ok()
-                    .code("APPOINTMENT_2008")
-                    .message("진료과별 예약 가능 시간 조회가 완료되었습니다.")
                     .body(availableTimes);
 
         } catch (Exception e) {

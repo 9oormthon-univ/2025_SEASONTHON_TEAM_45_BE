@@ -11,6 +11,7 @@ import org.carefreepass.com.carefreepassserver.domain.notification.dto.request.P
 import org.carefreepass.com.carefreepassserver.domain.notification.dto.response.NotificationHistoryResponse;
 import org.carefreepass.com.carefreepassserver.domain.notification.entity.NotificationHistory;
 import org.carefreepass.com.carefreepassserver.domain.notification.service.NotificationService;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.response.ApiResponseTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,14 +37,12 @@ public class NotificationController implements NotificationDocs {
             notificationService.registerDeviceToken(request.getMemberId(), request.getFcmToken(), request.getDeviceType());
 
             return ApiResponseTemplate.ok()
-                    .code("NOTIFICATION_2001")
-                    .message("FCM 토큰이 성공적으로 등록되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("NOTIFICATION_4001")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Failed to register FCM token", e);
@@ -62,14 +61,12 @@ public class NotificationController implements NotificationDocs {
             appointmentService.callPatient(request.getAppointmentId(), request.getRoomNumber());
 
             return ApiResponseTemplate.ok()
-                    .code("NOTIFICATION_2004")
-                    .message("환자 호출이 완료되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("NOTIFICATION_4004")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (RuntimeException e) {
             return ApiResponseTemplate.error()
@@ -96,8 +93,6 @@ public class NotificationController implements NotificationDocs {
                     .toList();
 
             return ApiResponseTemplate.ok()
-                    .code("NOTIFICATION_2005")
-                    .message("알림 이력 조회가 완료되었습니다.")
                     .body(responses);
 
         } catch (Exception e) {
@@ -120,8 +115,6 @@ public class NotificationController implements NotificationDocs {
                     .toList();
 
             return ApiResponseTemplate.ok()
-                    .code("NOTIFICATION_2006")
-                    .message("예약별 알림 이력 조회가 완료되었습니다.")
                     .body(responses);
 
         } catch (Exception e) {

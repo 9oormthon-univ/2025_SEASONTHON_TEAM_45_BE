@@ -230,7 +230,8 @@
 
     <script>
         let currentSessionId = null;
-        const API_BASE = 'http://localhost:8080/api/v1/chat';
+        // 현재 도메인을 기반으로 API URL 생성
+        const API_BASE = `${window.location.origin}/api/v1/chat`;
         
         // 자동 높이 조절
         const messageInput = document.getElementById('messageInput');
@@ -282,7 +283,7 @@
         // API 헬스 체크 함수
         async function checkServerHealth() {
             try {
-                const response = await fetch('http://localhost:8080/api/v1/test/health');
+                const response = await fetch(`${window.location.origin}/api/v1/test/health`);
                 const data = await response.json();
                 console.log('Server health:', data);
                 addMessage('✅ 서버 연결 확인됨', 'system');

@@ -14,7 +14,7 @@
    - 프로젝트 생성 완료
 
 ### 1.2 FCM 활성화
-1. **Cloud Messaging 설정**
+1. **Cloud Messaging 설정** 
    - Firebase 콘솔 좌측 메뉴에서 "Cloud Messaging" 선택
    - FCM이 자동으로 활성화됨
 

@@ -7,6 +7,9 @@ import org.carefreepass.com.carefreepassserver.domain.chat.entity.*;
 import org.carefreepass.com.carefreepassserver.domain.chat.repository.*;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
+import org.carefreepass.com.carefreepassserver.golbal.config.ChatProperties;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
+import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +22,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class AiChatService {
     
-    private static final String DEFAULT_HOSPITAL_NAME = "서울대병원";
-    private static final String DEFAULT_SESSION_TITLE = "AI 예약 상담";
-    private static final double CONFIDENCE_THRESHOLD = 0.7;
-    private static final int CONVERSATION_HISTORY_LIMIT = 3;
-    
+    private final ChatProperties chatProperties;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final SymptomAnalysisRepository symptomAnalysisRepository;
@@ -34,10 +33,10 @@ public class AiChatService {
     @Transactional
     public ChatSession startNewChatSession(Long memberId, String initialMessage) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 새로운 채팅 세션 생성
-        ChatSession session = ChatSession.createSession(member, DEFAULT_SESSION_TITLE);
+        ChatSession session = ChatSession.createSession(member, chatProperties.getDefaultSessionTitle());
         ChatSession savedSession = chatSessionRepository.save(session);
 
         // 첫 번째 사용자 메시지 저장
@@ -59,10 +58,10 @@ public class AiChatService {
     public ChatMessage sendMessage(Long sessionId, Long memberId, String messageContent) {
         // 세션 검증
         ChatSession session = chatSessionRepository.findByIdAndMemberIdWithMessages(sessionId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("접근할 수 없는 채팅 세션입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_SESSION_ACCESS_DENIED));
 
         if (session.getStatus() != ChatSessionStatus.ACTIVE) {
-            throw new IllegalStateException("활성 상태가 아닌 세션입니다.");
+            throw new BusinessException(ErrorCode.CHAT_SESSION_EXPIRED);
         }
 
         // 사용자 메시지 저장
@@ -81,24 +80,62 @@ public class AiChatService {
         return aiMessage;
     }
 
+    /**
+     * AI 응답을 생성하는 메인 메소드
+     * 예약 시도 -> 일반 채팅 응답 순서로 처리
+     */
     private String generateAiResponse(ChatSession session, String userMessage) {
         List<ChatMessage> conversationHistory = getConversationHistory(session.getId());
 
-        // 예약 시도 먼저 확인
-        String appointmentResult = appointmentBookingService.tryCreateAppointment(session, userMessage, conversationHistory);
+        // 1단계: 예약 시도 확인
+        String appointmentResult = tryAppointmentCreation(session, userMessage, conversationHistory);
         if (appointmentResult != null) {
             return appointmentResult;
         }
 
-        // OpenAI GPT를 사용하여 응답 생성 및 진료과 분석
-        String gptResponse = openAIService.generateResponse(conversationHistory, userMessage);
+        // 2단계: 일반 채팅 응답 처리
+        return handleGeneralChatResponse(session, userMessage, conversationHistory);
+    }
+    
+    /**
+     * 예약 생성 시도를 처리합니다
+     */
+    private String tryAppointmentCreation(ChatSession session, String userMessage, List<ChatMessage> conversationHistory) {
+        return appointmentBookingService.tryCreateAppointment(session, userMessage, conversationHistory);
+    }
+    
+    /**
+     * 일반적인 채팅 응답을 처리합니다 (GPT 호출 + 진료과 분석 + 응답 강화)
+     */
+    private String handleGeneralChatResponse(ChatSession session, String userMessage, List<ChatMessage> conversationHistory) {
+        // GPT 응답 생성
+        String gptResponse = generateGptResponse(conversationHistory, userMessage);
         
-        // GPT 응답에서 진료과 정보 추출 및 저장
-        AnalysisResult analysis = extractDepartmentFromGptResponse(gptResponse, userMessage);
-        saveOrUpdateSymptomAnalysis(session, analysis);
-
-        // GPT 응답을 기본으로 하되, 예약 관련 정보는 추가
+        // 진료과 분석 수행 및 저장
+        AnalysisResult analysis = analyzeAndSaveSymptoms(session, gptResponse, userMessage);
+        
+        // 응답에 예약 정보 추가
         return enhanceResponseWithAppointmentInfo(gptResponse, analysis);
+    }
+    
+    /**
+     * OpenAI GPT를 사용하여 기본 응답을 생성합니다
+     */
+    private String generateGptResponse(List<ChatMessage> conversationHistory, String userMessage) {
+        return openAIService.generateResponse(conversationHistory, userMessage);
+    }
+    
+    /**
+     * 사용자 메시지와 GPT 응답을 분석하여 증상 분석을 수행하고 저장합니다
+     */
+    private AnalysisResult analyzeAndSaveSymptoms(ChatSession session, String gptResponse, String userMessage) {
+        // 진료과 정보 추출
+        AnalysisResult analysis = extractDepartmentFromGptResponse(gptResponse, userMessage);
+        
+        // 분석 결과 저장
+        saveOrUpdateSymptomAnalysis(session, analysis);
+        
+        return analysis;
     }
     
     private List<ChatMessage> getConversationHistory(Long sessionId) {
@@ -132,15 +169,6 @@ public class AiChatService {
     }
 
 
-    private List<String> getAvailableDoctors(String department) {
-        // 실제로는 DB에서 해당 진료과 의사 목록을 조회
-        return switch (department) {
-            case "내과" -> List.of("김내과 의사", "이내과 의사");
-            case "정형외과" -> List.of("박정형 의사", "최정형 의사");
-            case "피부과" -> List.of("정피부 의사");
-            default -> List.of("김일반 의사");
-        };
-    }
 
     private int getNextSequenceNumber(Long sessionId) {
         ChatMessage lastMessage = chatMessageRepository.findFirstByChatSessionIdOrderBySequenceNumberDesc(sessionId);
@@ -153,13 +181,13 @@ public class AiChatService {
 
     public ChatSession getChatSession(Long sessionId, Long memberId) {
         return chatSessionRepository.findByIdAndMemberIdWithMessages(sessionId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("접근할 수 없는 채팅 세션입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_SESSION_ACCESS_DENIED));
     }
 
     @Transactional
     public void completeChatSession(Long sessionId, Long memberId) {
         ChatSession session = chatSessionRepository.findByIdAndMemberIdWithMessages(sessionId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("접근할 수 없는 채팅 세션입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_SESSION_ACCESS_DENIED));
         
         session.completeSession();
         log.info("채팅 세션 완료: 세션 ID = {}", sessionId);
@@ -169,7 +197,7 @@ public class AiChatService {
         StringBuilder enhancedResponse = new StringBuilder(gptResponse);
         
         // 진료과 추천이 확실한 경우 예약 정보 추가
-        if (analysis.getConfidenceScore() > CONFIDENCE_THRESHOLD) {
+        if (analysis.getConfidenceScore() > chatProperties.getConfidenceThreshold()) {
             String department = analysis.getRecommendedDepartment();
             
             enhancedResponse.append("\n\n🏥 ").append(department).append(" 예약이 가능합니다.\n");
@@ -199,7 +227,7 @@ public class AiChatService {
         }
         
         // 2순위: GPT 응답에서 진료과 찾기
-        List<String> availableDepartments = List.of("내과", "외과", "정형외과", "피부과", "이비인후과", "안과", "산부인과", "소아과", "정신과", "치과");
+        List<String> availableDepartments = chatProperties.getAvailableDepartments();
         
         String gptLower = gptResponse.toLowerCase();
         String foundDepartment = "내과"; // 기본값
@@ -231,7 +259,7 @@ public class AiChatService {
     private String findExplicitDepartment(String message) {
         String lowerMessage = message.toLowerCase().replaceAll("\\s+", "");
         
-        List<String> departments = List.of("내과", "외과", "정형외과", "피부과", "이비인후과", "안과", "산부인과", "소아과", "정신과", "치과");
+        List<String> departments = chatProperties.getAvailableDepartments();
         
         for (String department : departments) {
             String lowerDept = department.toLowerCase();

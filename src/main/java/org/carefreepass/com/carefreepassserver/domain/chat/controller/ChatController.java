@@ -10,6 +10,7 @@ import org.carefreepass.com.carefreepassserver.domain.chat.dto.response.ChatSess
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatSession;
 import org.carefreepass.com.carefreepassserver.domain.chat.service.AiChatService;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.response.ApiResponseTemplate;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -33,14 +34,12 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
             ChatSessionResponse response = ChatSessionResponse.from(session);
 
             return ApiResponseTemplate.ok()
-                    .code("CHAT_2001")
-                    .message("AI 채팅 세션이 시작되었습니다.")
                     .body(response);
 
-        } catch (IllegalArgumentException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("CHAT_4001")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("채팅 세션 시작 실패", e);
@@ -63,14 +62,12 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
             ChatMessageResponse response = ChatMessageResponse.from(aiMessage);
 
             return ApiResponseTemplate.ok()
-                    .code("CHAT_2002")
-                    .message("메시지가 전송되었습니다.")
                     .body(response);
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("CHAT_4002")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("메시지 전송 실패", e);
@@ -90,8 +87,6 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
                     .toList();
 
             return ApiResponseTemplate.ok()
-                    .code("CHAT_2003")
-                    .message("채팅 세션 목록 조회가 완료되었습니다.")
                     .body(responses);
 
         } catch (Exception e) {
@@ -113,14 +108,12 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
             ChatSessionResponse response = ChatSessionResponse.from(session);
 
             return ApiResponseTemplate.ok()
-                    .code("CHAT_2004")
-                    .message("채팅 세션 상세 조회가 완료되었습니다.")
                     .body(response);
 
-        } catch (IllegalArgumentException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("CHAT_4003")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("채팅 세션 상세 조회 실패", e);
@@ -140,14 +133,12 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
             aiChatService.completeChatSession(sessionId, memberId);
 
             return ApiResponseTemplate.ok()
-                    .code("CHAT_2005")
-                    .message("채팅 세션이 완료되었습니다.")
                     .body("SUCCESS");
 
-        } catch (IllegalArgumentException e) {
+        } catch (BusinessException e) {
             return ApiResponseTemplate.error()
-                    .code("CHAT_4004")
-                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
             log.error("채팅 세션 완료 실패", e);

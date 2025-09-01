@@ -7,12 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentCreateRequest;
+import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentUpdateRequest;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.Appointment;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.AppointmentStatus;
 import org.carefreepass.com.carefreepassserver.domain.appointment.repository.AppointmentRepository;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
 import org.carefreepass.com.carefreepassserver.domain.notification.service.NotificationService;
+import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
+import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,37 +37,33 @@ public class AppointmentService {
     /**
      * 새로운 예약을 생성합니다.
      * 
-     * @param memberId 환자 ID
-     * @param hospitalName 병원명
-     * @param department 진료과
-     * @param appointmentDate 예약 날짜
-     * @param appointmentTime 예약 시간
+     * @param request 예약 생성 요청 정보
      * @return 생성된 예약 ID
-     * @throws IllegalArgumentException 존재하지 않는 회원인 경우
-     * @throws IllegalStateException 해당 날짜에 이미 예약이 있는 경우
+     * @throws BusinessException 존재하지 않는 회원인 경우 (MEMBER_NOT_FOUND)
+     * @throws BusinessException 해당 날짜에 이미 예약이 있는 경우 (APPOINTMENT_DUPLICATE_DATE, APPOINTMENT_TIME_UNAVAILABLE)
      */
     @Transactional
-    public Long createAppointment(Long memberId, String hospitalName, String department,
-                                LocalDate appointmentDate, LocalTime appointmentTime) {
+    public Long createAppointment(AppointmentCreateRequest request) {
         // 회원 존재 여부 검증
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        Member member = memberRepository.findById(request.getMemberId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 1. 환자별 중복 예약 검증 (같은 날짜에 예약된 상태인 예약이 있는지 확인)
-        if (appointmentRepository.existsByMemberIdAndAppointmentDateAndStatus(memberId, appointmentDate, AppointmentStatus.BOOKED)) {
-            throw new IllegalStateException("해당 날짜에 이미 예약이 있습니다.");
+        if (appointmentRepository.existsByMemberIdAndAppointmentDateAndStatus(
+                request.getMemberId(), request.getAppointmentDate(), AppointmentStatus.BOOKED)) {
+            throw new BusinessException(ErrorCode.APPOINTMENT_DUPLICATE_DATE);
         }
 
         // 2. 진료과별 시간 충돌 검사 (같은 진료과, 같은 시간에 예약이 있는지 확인)
         if (appointmentRepository.existsByDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
-                department, appointmentDate, appointmentTime, AppointmentStatus.BOOKED)) {
-            throw new IllegalStateException(String.format("%s는 %s %s 시간에 이미 예약이 있습니다.", 
-                    department, appointmentDate, appointmentTime));
+                request.getDepartment(), request.getAppointmentDate(), request.getAppointmentTime(), AppointmentStatus.BOOKED)) {
+            throw new BusinessException(ErrorCode.APPOINTMENT_TIME_UNAVAILABLE);
         }
 
         // 예약 엔티티 생성 (초기 상태: BOOKED)
         Appointment appointment = Appointment.createAppointment(
-                member, hospitalName, department, appointmentDate, appointmentTime
+                member, request.getHospitalName(), request.getDepartment(), 
+                request.getAppointmentDate(), request.getAppointmentTime()
         );
 
         // 예약 저장
@@ -71,10 +71,11 @@ public class AppointmentService {
 
         // 예약 확인 알림 전송
         notificationService.sendAppointmentConfirmation(
-                savedAppointment.getId(), memberId, member.getName(), hospitalName, appointmentDate.toString(), appointmentTime.toString()
+                savedAppointment.getId(), request.getMemberId(), member.getName(), 
+                request.getHospitalName(), request.getAppointmentDate().toString(), request.getAppointmentTime().toString()
         );
 
-        log.info("예약 생성 완료: 회원 {} (ID: {})", member.getName(), memberId);
+        log.info("예약 생성 완료: 회원 {} (ID: {})", member.getName(), request.getMemberId());
         return savedAppointment.getId();
     }
 
@@ -84,23 +85,23 @@ public class AppointmentService {
      * 
      * @param appointmentId 예약 ID
      * @param memberId 환자 ID
-     * @throws IllegalArgumentException 존재하지 않는 예약이거나 본인 예약이 아닌 경우
-     * @throws IllegalStateException 체크인 불가능한 상태인 경우
+     * @throws BusinessException 존재하지 않는 예약이거나 본인 예약이 아닌 경우 (APPOINTMENT_NOT_FOUND, FORBIDDEN)
+     * @throws BusinessException 체크인 불가능한 상태인 경우 (APPOINTMENT_CANNOT_MODIFY_COMPLETED)
      */
     @Transactional
     public void checkinAppointment(Long appointmentId, Long memberId) {
         // 예약 조회
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
 
         // 본인 예약인지 확인
         if (!appointment.getMember().getId().equals(memberId)) {
-            throw new IllegalArgumentException("본인의 예약만 체크인할 수 있습니다.");
+            throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
         // 체크인 가능한 상태인지 확인 (BOOKED 상태에서만 체크인 가능)
         if (appointment.getStatus() != AppointmentStatus.BOOKED) {
-            throw new IllegalStateException("예약 상태가 체크인 가능한 상태가 아닙니다.");
+            throw new BusinessException(ErrorCode.APPOINTMENT_CANNOT_MODIFY_COMPLETED);
         }
 
         // 체크인 처리 (상태를 ARRIVED로 변경)
@@ -124,7 +125,7 @@ public class AppointmentService {
     @Transactional
     public void deleteAppointment(Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
         
         appointmentRepository.delete(appointment);
         log.info("Appointment deleted: {} (ID: {})", appointment.getMember().getName(), appointmentId);
@@ -133,7 +134,7 @@ public class AppointmentService {
     @Transactional
     public void updateAppointmentStatus(Long appointmentId, AppointmentStatus status) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
 
         appointment.updateStatus(status);
         log.info("Appointment status updated: {} -> {} (ID: {})", 
@@ -141,16 +142,16 @@ public class AppointmentService {
     }
 
     @Transactional
-    public void updateAppointment(Long appointmentId, String hospitalName, String department, 
-                                LocalDate appointmentDate, LocalTime appointmentTime) {
+    public void updateAppointment(Long appointmentId, AppointmentUpdateRequest request) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
 
         if (appointment.getStatus() == AppointmentStatus.COMPLETED || appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new IllegalStateException("완료되거나 취소된 예약은 수정할 수 없습니다.");
+            throw new BusinessException(ErrorCode.APPOINTMENT_CANNOT_MODIFY_COMPLETED);
         }
 
-        appointment.updateAppointment(hospitalName, department, appointmentDate, appointmentTime);
+        appointment.updateAppointment(request.getHospitalName(), request.getDepartment(), 
+                                    request.getAppointmentDate(), request.getAppointmentTime());
         log.info("Appointment updated: {} (ID: {})", appointment.getMember().getName(), appointmentId);
     }
 
@@ -160,19 +161,19 @@ public class AppointmentService {
      * 
      * @param appointmentId 예약 ID
      * @param customRoomNumber 사용자 지정 진료실 번호 (null인 경우 예약의 기본 진료실 사용)
-     * @throws IllegalArgumentException 존재하지 않는 예약인 경우
-     * @throws IllegalStateException 호출 불가능한 상태인 경우 (COMPLETED, CANCELLED)
+     * @throws BusinessException 존재하지 않는 예약인 경우 (APPOINTMENT_NOT_FOUND)
+     * @throws BusinessException 호출 불가능한 상태인 경우 (APPOINTMENT_CALL_NOT_AVAILABLE)
      * @throws RuntimeException 푸시 알림 전송 실패인 경우
      */
     @Transactional
     public void callPatient(Long appointmentId, String customRoomNumber) {
         // 예약 조회
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
 
         // 호출 가능한 상태인지 확인 (COMPLETED, CANCELLED 제외)
         if (!appointment.canCall()) {
-            throw new IllegalStateException("호출할 수 없는 예약 상태입니다.");
+            throw new BusinessException(ErrorCode.APPOINTMENT_CALL_NOT_AVAILABLE);
         }
 
         // 진료실 번호는 단순히 사용자 지정이거나 기본값 사용
@@ -201,7 +202,7 @@ public class AppointmentService {
 
     public Appointment getAppointment(Long appointmentId) {
         return appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
     }
 
     /**

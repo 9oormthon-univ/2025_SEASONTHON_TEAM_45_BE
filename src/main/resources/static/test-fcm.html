@@ -436,8 +436,8 @@
             <!-- API 정보 -->
             <div class="card api-info">
                 <h3>🚀 API 엔드포인트</h3>
-                <p><strong>알림 API:</strong> <code>http://localhost:8080/api/v1/notifications</code></p>
-                <p><strong>예약 API:</strong> <code>http://localhost:8080/api/v1/appointments</code></p>
+                <p><strong>알림 API:</strong> <code id="notification-api-display"></code></p>
+                <p><strong>예약 API:</strong> <code id="appointment-api-display"></code></p>
                 
                 <h4 style="margin-top: 20px; color: #2d3748;">알림 API</h4>
                 <ul style="margin: 10px 0; padding-left: 20px;">
@@ -525,10 +525,14 @@
         // 오늘 날짜 설정
         document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
 
-        // API 기본 URL
-        const BASE_URL = 'http://localhost:8080/api/v1/notifications';
-        const APPOINTMENT_URL = 'http://localhost:8080/api/v1/appointments';
-        const AUTH_URL = 'http://localhost:8080/api/v1/auth';
+        // API 기본 URL - 현재 도메인 기반으로 동적 생성
+        const BASE_URL = `${window.location.origin}/api/v1/notifications`;
+        const APPOINTMENT_URL = `${window.location.origin}/api/v1/appointments`;
+        const AUTH_URL = `${window.location.origin}/api/v1/auth`;
+
+        // 화면에 API URL 표시
+        document.getElementById('notification-api-display').textContent = BASE_URL;
+        document.getElementById('appointment-api-display').textContent = APPOINTMENT_URL;
 
         // 회원가입
         async function signUp() {
