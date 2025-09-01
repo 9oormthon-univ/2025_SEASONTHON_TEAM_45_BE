@@ -36,7 +36,8 @@ public class ChatMessage extends BaseTimeEntity {
     private MessageSenderType senderType;
 
     /** 메시지 내용 (TEXT 타입으로 긴 내용 저장 가능) */
-    @Column(name = "message_content", columnDefinition = "TEXT", nullable = false)
+    @Lob
+    @Column(name = "message_content", nullable = false)
     private String content;
 
     /** 채팅 세션 내 메시지 순서 번호 */
@@ -46,7 +47,7 @@ public class ChatMessage extends BaseTimeEntity {
     /**
      * 사용자 메시지 생성 정적 팩토리 메서드
      * 발신자 타입을 USER로 설정하여 메시지를 생성합니다.
-     * 
+     *
      * @param content 메시지 내용
      * @param sequenceNumber 메시지 순서 번호
      * @return 생성된 사용자 메시지
@@ -62,7 +63,7 @@ public class ChatMessage extends BaseTimeEntity {
     /**
      * AI 메시지 생성 정적 팩토리 메서드
      * 발신자 타입을 AI로 설정하여 메시지를 생성합니다.
-     * 
+     *
      * @param content 메시지 내용
      * @param sequenceNumber 메시지 순서 번호
      * @return 생성된 AI 메시지
