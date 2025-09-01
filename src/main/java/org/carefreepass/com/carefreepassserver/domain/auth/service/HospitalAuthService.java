@@ -46,7 +46,7 @@ public class HospitalAuthService {
         HospitalMember hospitalMember = HospitalMember.createHospitalMember(hospital, admin, request.adminEmail());
         hospitalMemberRepository.save(hospitalMember);
 
-        return jwtTokenProvider.generateTokenPair(admin.getId(), admin.getRole());
+        return jwtTokenProvider.generateTokenPair(admin.getId(), admin.getName(), admin.getRole());
     }
 
     @Transactional(readOnly = true)
@@ -58,7 +58,7 @@ public class HospitalAuthService {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
 
-        return jwtTokenProvider.generateTokenPair(admin.getId(), admin.getRole());
+        return jwtTokenProvider.generateTokenPair(admin.getId(), admin.getName(), admin.getRole());
     }
 
 }
