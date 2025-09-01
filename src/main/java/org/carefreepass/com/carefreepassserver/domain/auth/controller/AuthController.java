@@ -3,6 +3,8 @@ package org.carefreepass.com.carefreepassserver.domain.auth.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.auth.controller.docs.AuthDocs;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignInRequest;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignInRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.RefreshTokenRequest;
@@ -49,6 +51,26 @@ public class AuthController implements AuthDocs {
         return ApiResponseTemplate.ok()
                 .code("AUTH_2003")
                 .message("토큰 재발급에 성공했습니다.")
+                .body(response);
+    }
+
+    @PostMapping("hospital/sign-up")
+    public ApiResponseTemplate<TokenPairResponse> hospitalSignUpWithLocal(@RequestBody HospitalSignUpRequest request) {
+        TokenPairResponse response = authService.hospitalSignUpWithLocal(request);
+
+        return ApiResponseTemplate.ok()
+                .code("AUTH_2004")
+                .message("병원 회원가입이 완료되었습니다.")
+                .body(response);
+    }
+
+    @PostMapping("hospital/sign-in")
+    public ApiResponseTemplate<TokenPairResponse> hospitalSignInWithLocal(@RequestBody HospitalSignInRequest request) {
+        TokenPairResponse response = authService.hospitalSignInWithLocal(request);
+
+        return ApiResponseTemplate.ok()
+                .code("AUTH_2005")
+                .message("병원 로그인에 성공했습니다.")
                 .body(response);
     }
 }

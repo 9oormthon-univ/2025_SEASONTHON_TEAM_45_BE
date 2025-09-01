@@ -2,6 +2,8 @@ package org.carefreepass.com.carefreepassserver.domain.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.RefreshTokenDto;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignInRequest;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignInRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.RefreshTokenRequest;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final HospitalAuthService hospitalAuthService;
     private final PatientAuthService patientAuthService;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberUtil memberUtil;
@@ -40,5 +43,15 @@ public class AuthService {
         Member member = memberUtil.getMemberByMemberId(refreshToken.memberId());
 
         return jwtTokenProvider.generateTokenPair(member.getId(), MemberRole.USER);
+    }
+
+    @Transactional
+    public TokenPairResponse hospitalSignUpWithLocal(HospitalSignUpRequest request) {
+        return hospitalAuthService.hospitalSignUpWithLocal(request);
+    }
+
+    @Transactional(readOnly = true)
+    public TokenPairResponse hospitalSignInWithLocal(HospitalSignInRequest request) {
+        return hospitalAuthService.hospitalSignInWithLocal(request);
     }
 }

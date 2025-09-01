@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignInRequest;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.HospitalSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignInRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.RefreshTokenRequest;
@@ -53,4 +55,31 @@ public interface AuthDocs {
             }
     )
     ApiResponseTemplate<TokenPairResponse> reissueTokenPair(@Valid @RequestBody RefreshTokenRequest request);
+
+    @Operation(
+            summary = "병원 회원가입(관리자 + 병원 + 소속 생성)",
+            description = "관리자 정보와 병원 정보를 동시에 등록하고 JWT 발급",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공",
+                            content = @Content(schema = @Schema(implementation = TokenPairResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "중복 전화번호 / 유효성 실패"),
+                    @ApiResponse(responseCode = "500", description = "서버 오류")
+            }
+    )
+    ApiResponseTemplate<TokenPairResponse> hospitalSignUpWithLocal(
+            @Valid @RequestBody HospitalSignUpRequest request);
+
+    @Operation(
+            summary = "병원 로그인(관리자)",
+            description = "아이디/비밀번호로 로그인",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공",
+                            content = @Content(schema = @Schema(implementation = TokenPairResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "자격 증명 오류"),
+                    @ApiResponse(responseCode = "404", description = "계정 없음"),
+                    @ApiResponse(responseCode = "500", description = "서버 오류")
+            }
+    )
+    ApiResponseTemplate<TokenPairResponse> hospitalSignInWithLocal(
+            @Valid @RequestBody HospitalSignInRequest request);
 }
