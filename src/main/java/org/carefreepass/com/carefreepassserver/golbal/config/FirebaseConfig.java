@@ -42,7 +42,7 @@ public class FirebaseConfig {
                 log.info("Firebase application initialized successfully with project ID: {}", projectId);
             }
         } catch (Exception e) {
-            log.error("Failed to initialize Firebase: {}", e.getMessage(), e);
+            log.error("Firebase 초기화 실패: {}", e.getMessage(), e);
             log.warn("FCM functionality will be disabled due to Firebase initialization failure");
         }
     }

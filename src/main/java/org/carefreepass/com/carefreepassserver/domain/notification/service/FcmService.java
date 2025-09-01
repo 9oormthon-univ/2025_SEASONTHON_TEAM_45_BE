@@ -65,7 +65,7 @@ public class FcmService {
             return true;
 
         } catch (FirebaseMessagingException e) {
-            log.error("Failed to send FCM message to token: {}", fcmToken, e);
+            log.error("FCM 메시지 전송 실패, 토큰: {}", fcmToken, e);
 
             // 유효하지 않은 토큰 감지
             if ("INVALID_ARGUMENT".equals(e.getErrorCode()) ||
