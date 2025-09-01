@@ -30,7 +30,6 @@ public class PatientProfile {
 
     private Gender gender;
 
-
     @Builder(access = AccessLevel.PRIVATE)
     private PatientProfile(Member member, String birthDate, Gender gender) {
         this.member = member;

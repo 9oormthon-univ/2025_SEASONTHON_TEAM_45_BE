@@ -30,4 +30,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * @return 회원 정보 (존재하지 않을 경우 Optional.empty())
      */
     Optional<Member> findByPhoneNumber(String phoneNumber);
+
+    /**
+     * 이메일로 회원 조회
+     * 이메일을 기반으로 회원 정보를 조회합니다.
+     *
+     * @param email 조회할 이메일
+     * @return 회원 정보 (존재하지 않을 경우 Optional.empty())
+     */
+    Optional<Member> findByEmail(String email);
 }
