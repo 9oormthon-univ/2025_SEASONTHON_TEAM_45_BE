@@ -19,6 +19,7 @@ import org.carefreepass.com.carefreepassserver.golbal.domain.Status;
 @Getter
 @EqualsAndHashCode(callSuper = false, of = "id")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@org.hibernate.annotations.DynamicUpdate
 public class Member extends BaseTimeEntity {
 
     @Id

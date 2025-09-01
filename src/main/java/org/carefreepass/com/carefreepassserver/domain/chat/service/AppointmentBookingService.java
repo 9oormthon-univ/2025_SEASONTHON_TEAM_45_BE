@@ -3,7 +3,9 @@ package org.carefreepass.com.carefreepassserver.domain.chat.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentCreateRequest;
+import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.TimeSlotResponse;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.AppointmentService;
+import org.carefreepass.com.carefreepassserver.domain.appointment.service.TimeSlotService;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatSession;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.SymptomAnalysis;
@@ -26,6 +28,7 @@ public class AppointmentBookingService {
     
     private final ChatProperties chatProperties;
     private final AppointmentService appointmentService;
+    private final TimeSlotService timeSlotService;
     private final SymptomAnalysisRepository symptomAnalysisRepository;
     private final AppointmentInfoExtractor appointmentInfoExtractor;
     
@@ -48,6 +51,13 @@ public class AppointmentBookingService {
                 return generateAppointmentInfoRequest(appointmentInfo, analysis);
             }
             
+            // 예약 생성 전에 해당 시간이 실제로 예약 가능한지 확인
+            if (!isTimeSlotActuallyAvailable(analysis.getRecommendedDepartment(), 
+                    appointmentInfo.getAppointmentDate(), appointmentInfo.getAppointmentTime())) {
+                return generateTimeNotAvailableMessage(analysis.getRecommendedDepartment(), 
+                        appointmentInfo.getAppointmentDate(), appointmentInfo.getAppointmentTime());
+            }
+            
             Long appointmentId = createAppointment(session, appointmentInfo);
             log.info("AI 챗봇을 통한 예약 생성 성공: 예약 ID = {}, 회원 ID = {}", 
                     appointmentId, session.getMember().getId());
@@ -62,12 +72,12 @@ public class AppointmentBookingService {
     }
     
     private Long createAppointment(ChatSession session, AppointmentInfo info) {
-        String hospitalName = info.getHospitalName() != null ? 
-            info.getHospitalName() : chatProperties.getDefaultHospitalName();
-            
+        // 구름대병원 ID를 1로 가정 (실제 환경에서는 설정으로 관리)
+        Long hospitalId = 1L;
+        
         AppointmentCreateRequest request = new AppointmentCreateRequest(
             session.getMember().getId(),
-            hospitalName,
+            hospitalId,
             info.getDepartment(),
             info.getAppointmentDate(),
             info.getAppointmentTime()
@@ -89,12 +99,19 @@ public class AppointmentBookingService {
         StringBuilder response = new StringBuilder();
         response.append("🏥 ").append(analysis.getRecommendedDepartment()).append(" 예약을 도와드리겠습니다!\n\n");
         
-        if (info.getAppointmentDate() == null) {
+        // 날짜가 있는 경우 해당 날짜의 가능한 시간 표시
+        if (info.getAppointmentDate() != null && info.getAppointmentTime() == null) {
+            String availableTimes = getAvailableTimesMessage(analysis.getRecommendedDepartment(), info.getAppointmentDate());
+            response.append(availableTimes);
+        }
+        // 날짜가 없는 경우 날짜 입력 요청
+        else if (info.getAppointmentDate() == null) {
             response.append("📅 원하시는 예약 날짜를 알려주세요.\n");
-            response.append("예) 8월 31일, 내일, 9/1\n\n");
+            response.append("예) 내일, 9월 2일, 9/2\n\n");
         }
         
-        if (info.getAppointmentTime() == null) {
+        // 시간이 없는 경우 시간 입력 요청 (날짜가 없을 때만)
+        if (info.getAppointmentTime() == null && info.getAppointmentDate() == null) {
             response.append("🕐 원하시는 예약 시간을 알려주세요.\n");
             response.append("예) 오후 2시, 14:00, 2시\n\n");
         }
@@ -102,6 +119,95 @@ public class AppointmentBookingService {
         if (info.getAppointmentDate() == null || info.getAppointmentTime() == null) {
             response.append("날짜와 시간을 함께 말씀해주시면 더 빠르게 도와드릴 수 있습니다!");
         }
+        
+        return response.toString();
+    }
+
+    /**
+     * 특정 날짜의 예약 가능한 시간을 안내하는 메시지 생성
+     */
+    private String getAvailableTimesMessage(String departmentName, LocalDate date) {
+        try {
+            // 구름대병원 ID를 1로 가정
+            Long hospitalId = 1L;
+            List<TimeSlotResponse> timeSlots = timeSlotService.getAvailableTimeSlots(hospitalId, departmentName, date);
+            
+            List<TimeSlotResponse> availableSlots = timeSlots.stream()
+                    .filter(TimeSlotResponse::getAvailable)
+                    .toList();
+                    
+            StringBuilder message = new StringBuilder();
+            message.append("📅 ").append(date.getMonthValue()).append("월 ").append(date.getDayOfMonth()).append("일 예약 가능 시간:\n\n");
+            
+            if (availableSlots.isEmpty()) {
+                message.append("❌ 해당 날짜에는 예약 가능한 시간이 없습니다.\n");
+                message.append("다른 날짜를 선택해 주세요.\n\n");
+            } else {
+                message.append("✅ 예약 가능한 시간:\n");
+                for (int i = 0; i < availableSlots.size() && i < 8; i++) { // 최대 8개만 표시
+                    TimeSlotResponse slot = availableSlots.get(i);
+                    message.append("• ").append(formatTimeForUser(slot.getTime())).append("\n");
+                }
+                
+                if (availableSlots.size() > 8) {
+                    message.append("• 그 외 ").append(availableSlots.size() - 8).append("개 시간대\n");
+                }
+                message.append("\n원하시는 시간을 말씀해 주세요!\n\n");
+            }
+            
+            return message.toString();
+        } catch (Exception e) {
+            log.error("예약 가능 시간 조회 실패: {}", e.getMessage());
+            return "🕐 원하시는 예약 시간을 알려주세요.\n예) 오후 2시, 14:00, 2시\n\n";
+        }
+    }
+
+    /**
+     * 시간을 사용자 친화적으로 포맷
+     */
+    private String formatTimeForUser(LocalTime time) {
+        int hour = time.getHour();
+        int minute = time.getMinute();
+        
+        if (hour < 12) {
+            if (hour == 0) {
+                return String.format("오전 12:%02d", minute);
+            } else {
+                return String.format("오전 %d:%02d", hour, minute);
+            }
+        } else {
+            if (hour == 12) {
+                return String.format("오후 12:%02d", minute);
+            } else {
+                return String.format("오후 %d:%02d", hour - 12, minute);
+            }
+        }
+    }
+
+    /**
+     * 실제로 해당 시간이 예약 가능한지 확인
+     */
+    private boolean isTimeSlotActuallyAvailable(String departmentName, LocalDate date, LocalTime time) {
+        try {
+            Long hospitalId = 1L; // 구름대병원
+            return timeSlotService.isTimeSlotAvailable(hospitalId, departmentName, date, time);
+        } catch (Exception e) {
+            log.error("시간 가용성 확인 실패: {}", e.getMessage());
+            return false; // 확인 실패 시 안전하게 불가능으로 처리
+        }
+    }
+
+    /**
+     * 요청한 시간이 예약 불가능할 때의 메시지 생성
+     */
+    private String generateTimeNotAvailableMessage(String departmentName, LocalDate date, LocalTime requestedTime) {
+        StringBuilder response = new StringBuilder();
+        response.append("😔 죄송합니다. ").append(formatTimeForUser(requestedTime))
+                .append("은 이미 예약되었거나 예약이 불가능한 시간입니다.\n\n");
+        
+        // 해당 날짜의 다른 가능한 시간들 제안
+        String alternativeTimes = getAvailableTimesMessage(departmentName, date);
+        response.append(alternativeTimes);
         
         return response.toString();
     }
