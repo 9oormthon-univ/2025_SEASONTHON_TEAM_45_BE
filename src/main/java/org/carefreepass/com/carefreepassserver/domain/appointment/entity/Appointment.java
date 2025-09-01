@@ -17,6 +17,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.HospitalDepartment;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.golbal.domain.BaseTimeEntity;
 
@@ -40,13 +41,10 @@ public class Appointment extends BaseTimeEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    /** 병원명 */
-    @Column(nullable = false, length = 100)
-    private String hospitalName;
-
-    /** 진료과 */
-    @Column(nullable = false, length = 50)
-    private String department;
+    /** 예약 진료과 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hospital_department_id", nullable = false)
+    private HospitalDepartment hospitalDepartment;
 
     /** 예약 날짜 */
     @Column(nullable = false)
@@ -66,11 +64,10 @@ public class Appointment extends BaseTimeEntity {
      * 외부에서 직접 호출할 수 없으며, 정적 팩토리 메서드를 통해서만 생성 가능
      */
     @Builder(access = AccessLevel.PRIVATE)
-    private Appointment(Member member, String hospitalName, String department,
+    private Appointment(Member member, HospitalDepartment hospitalDepartment,
                        LocalDate appointmentDate, LocalTime appointmentTime) {
         this.member = member;
-        this.hospitalName = hospitalName;
-        this.department = department;
+        this.hospitalDepartment = hospitalDepartment;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
         this.status = AppointmentStatus.BOOKED; // 초기 상태는 예약 완료
@@ -81,18 +78,16 @@ public class Appointment extends BaseTimeEntity {
      * 새로운 예약을 생성하며, 초기 상태는 BOOKED로 설정됩니다.
      * 
      * @param member 예약한 환자
-     * @param hospitalName 병원명
-     * @param department 진료과
+     * @param hospitalDepartment 예약 진료과
      * @param appointmentDate 예약 날짜
      * @param appointmentTime 예약 시간
      * @return 생성된 예약 엔티티
      */
-    public static Appointment createAppointment(Member member, String hospitalName, String department,
+    public static Appointment createAppointment(Member member, HospitalDepartment hospitalDepartment,
                                               LocalDate appointmentDate, LocalTime appointmentTime) {
         return Appointment.builder()
                 .member(member)
-                .hospitalName(hospitalName)
-                .department(department)
+                .hospitalDepartment(hospitalDepartment)
                 .appointmentDate(appointmentDate)
                 .appointmentTime(appointmentTime)
                 .build();
@@ -137,16 +132,32 @@ public class Appointment extends BaseTimeEntity {
      * 예약 정보 수정
      * 완료되거나 취소된 예약이 아닌 경우에만 수정 가능합니다.
      * 
-     * @param hospitalName 변경할 병원명
-     * @param department 변경할 진료과
+     * @param hospitalDepartment 변경할 진료과
      * @param appointmentDate 변경할 예약 날짜
      * @param appointmentTime 변경할 예약 시간
      */
-    public void updateAppointment(String hospitalName, String department,
+    public void updateAppointment(HospitalDepartment hospitalDepartment,
                                 LocalDate appointmentDate, LocalTime appointmentTime) {
-        this.hospitalName = hospitalName;
-        this.department = department;
+        this.hospitalDepartment = hospitalDepartment;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
+    }
+
+    /**
+     * 병원명 조회 (편의 메서드)
+     * 
+     * @return 병원명
+     */
+    public String getHospitalName() {
+        return this.hospitalDepartment.getHospital().getName();
+    }
+
+    /**
+     * 진료과명 조회 (편의 메서드)
+     * 
+     * @return 진료과명
+     */
+    public String getDepartmentName() {
+        return this.hospitalDepartment.getName();
     }
 }

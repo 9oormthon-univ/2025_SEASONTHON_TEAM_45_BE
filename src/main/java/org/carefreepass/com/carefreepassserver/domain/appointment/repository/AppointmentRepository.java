@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.Appointment;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.AppointmentStatus;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.HospitalDepartment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,29 +49,27 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT a FROM Appointment a JOIN FETCH a.member WHERE a.appointmentDate = :date ORDER BY a.appointmentTime")
     List<Appointment> findAllByAppointmentDate(@Param("date") LocalDate date);
 
+
     /**
-     * 진료과별 시간 충돌 검사
-     * 같은 진료과, 같은 날짜, 같은 시간에 이미 예약이 있는지 확인합니다.
+     * 병원 진료과별 예약된 시간 조회 (새로운 구조용)
      * 
-     * @param department 진료과명
+     * @param hospitalDepartment 병원 진료과 엔티티
+     * @param date 조회할 날짜
+     * @param status 조회할 예약 상태
+     * @return 예약 목록 (회원 정보 포함)
+     */
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.member WHERE a.hospitalDepartment = :department AND a.appointmentDate = :date AND a.status = :status ORDER BY a.appointmentTime")
+    List<Appointment> findByHospitalDepartmentAndDateAndStatus(@Param("department") HospitalDepartment hospitalDepartment, @Param("date") LocalDate date, @Param("status") AppointmentStatus status);
+
+    /**
+     * 병원 진료과와 특정 시간의 예약 존재 여부 확인
+     * 
+     * @param hospitalDepartment 병원 진료과
      * @param appointmentDate 예약 날짜
      * @param appointmentTime 예약 시간
      * @param status 확인할 예약 상태
-     * @return 충돌 여부 (true: 충돌 있음, false: 예약 가능)
+     * @return 예약 존재 여부
      */
-    boolean existsByDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
-            String department, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
-
-    /**
-     * 진료과별 예약된 시간 조회
-     * 특정 진료과의 특정 날짜에 이미 예약된 시간들을 조회하여 
-     * 예약 가능한 시간을 계산할 때 사용됩니다.
-     * 
-     * @param department 진료과명
-     * @param date 조회할 날짜
-     * @param status 조회할 예약 상태
-     * @return 시간 순으로 정렬된 예약된 시간 목록
-     */
-    @Query("SELECT a.appointmentTime FROM Appointment a WHERE a.department = :department AND a.appointmentDate = :date AND a.status = :status ORDER BY a.appointmentTime")
-    List<LocalTime> findBookedTimesByDepartmentAndDate(@Param("department") String department, @Param("date") LocalDate date, @Param("status") AppointmentStatus status);
+    boolean existsByHospitalDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
+            HospitalDepartment hospitalDepartment, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
 }

@@ -12,6 +12,10 @@ import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.Ap
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.Appointment;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.AppointmentStatus;
 import org.carefreepass.com.carefreepassserver.domain.appointment.repository.AppointmentRepository;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.Hospital;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.HospitalDepartment;
+import org.carefreepass.com.carefreepassserver.domain.hospital.repository.HospitalDepartmentRepository;
+import org.carefreepass.com.carefreepassserver.domain.hospital.repository.HospitalRepository;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
 import org.carefreepass.com.carefreepassserver.domain.notification.service.NotificationService;
@@ -32,6 +36,8 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final MemberRepository memberRepository;
+    private final HospitalRepository hospitalRepository;
+    private final HospitalDepartmentRepository hospitalDepartmentRepository;
     private final NotificationService notificationService;
 
     /**
@@ -40,6 +46,8 @@ public class AppointmentService {
      * @param request 예약 생성 요청 정보
      * @return 생성된 예약 ID
      * @throws BusinessException 존재하지 않는 회원인 경우 (MEMBER_NOT_FOUND)
+     * @throws BusinessException 존재하지 않는 병원인 경우 (HOSPITAL_NOT_FOUND)
+     * @throws BusinessException 존재하지 않는 진료과인 경우 (DEPARTMENT_NOT_FOUND)
      * @throws BusinessException 해당 날짜에 이미 예약이 있는 경우 (APPOINTMENT_DUPLICATE_DATE, APPOINTMENT_TIME_UNAVAILABLE)
      */
     @Transactional
@@ -48,6 +56,15 @@ public class AppointmentService {
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        // 병원 존재 여부 검증
+        Hospital hospital = hospitalRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.HOSPITAL_NOT_FOUND));
+
+        // 진료과 존재 여부 및 활성화 상태 검증
+        HospitalDepartment department = hospitalDepartmentRepository
+                .findByHospitalAndNameAndActiveTrue(hospital, request.getDepartmentName())
+                .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
+
         // 1. 환자별 중복 예약 검증 (같은 날짜에 예약된 상태인 예약이 있는지 확인)
         if (appointmentRepository.existsByMemberIdAndAppointmentDateAndStatus(
                 request.getMemberId(), request.getAppointmentDate(), AppointmentStatus.BOOKED)) {
@@ -55,15 +72,14 @@ public class AppointmentService {
         }
 
         // 2. 진료과별 시간 충돌 검사 (같은 진료과, 같은 시간에 예약이 있는지 확인)
-        if (appointmentRepository.existsByDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
-                request.getDepartment(), request.getAppointmentDate(), request.getAppointmentTime(), AppointmentStatus.BOOKED)) {
+        if (appointmentRepository.existsByHospitalDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
+                department, request.getAppointmentDate(), request.getAppointmentTime(), AppointmentStatus.BOOKED)) {
             throw new BusinessException(ErrorCode.APPOINTMENT_TIME_UNAVAILABLE);
         }
 
         // 예약 엔티티 생성 (초기 상태: BOOKED)
         Appointment appointment = Appointment.createAppointment(
-                member, request.getHospitalName(), request.getDepartment(), 
-                request.getAppointmentDate(), request.getAppointmentTime()
+                member, department, request.getAppointmentDate(), request.getAppointmentTime()
         );
 
         // 예약 저장
@@ -72,10 +88,11 @@ public class AppointmentService {
         // 예약 확인 알림 전송
         notificationService.sendAppointmentConfirmation(
                 savedAppointment.getId(), request.getMemberId(), member.getName(), 
-                request.getHospitalName(), request.getAppointmentDate().toString(), request.getAppointmentTime().toString()
+                hospital.getName(), request.getAppointmentDate().toString(), request.getAppointmentTime().toString()
         );
 
-        log.info("예약 생성 완료: 회원 {} (ID: {})", member.getName(), request.getMemberId());
+        log.info("예약 생성 완료: 회원 {} (ID: {}), 진료과: {}", 
+                member.getName(), request.getMemberId(), request.getDepartmentName());
         return savedAppointment.getId();
     }
 
@@ -150,14 +167,23 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.APPOINTMENT_CANNOT_MODIFY_COMPLETED);
         }
 
-        appointment.updateAppointment(request.getHospitalName(), request.getDepartment(), 
-                                    request.getAppointmentDate(), request.getAppointmentTime());
-        log.info("Appointment updated: {} (ID: {})", appointment.getMember().getName(), appointmentId);
+        // 병원 존재 여부 검증
+        Hospital hospital = hospitalRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.HOSPITAL_NOT_FOUND));
+
+        // 진료과 존재 여부 및 활성화 상태 검증
+        HospitalDepartment department = hospitalDepartmentRepository
+                .findByHospitalAndNameAndActiveTrue(hospital, request.getDepartmentName())
+                .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
+
+        appointment.updateAppointment(department, request.getAppointmentDate(), request.getAppointmentTime());
+        log.info("예약 수정 완료: {} (ID: {}), 진료과: {}", 
+                appointment.getMember().getName(), appointmentId, request.getDepartmentName());
     }
 
     /**
      * 환자를 호출합니다. (핵심 기능)
-     * FCM을 통해 환자에게 진료실 호출 알림을 전송하고, 성공 시 예약 상태를 CALLED로 변경합니다.
+//     * FCM을 통해 환자에게 진료실 호출 알림을 전송하고, 성공 시 예약 상태를 CALLED로 변경합니다.
      * 
      * @param appointmentId 예약 ID
      * @param customRoomNumber 사용자 지정 진료실 번호 (null인 경우 예약의 기본 진료실 사용)
@@ -205,47 +231,4 @@ public class AppointmentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
     }
 
-    /**
-     * 진료과별 예약 가능 시간을 조회합니다.
-     * 
-     * @param department 진료과
-     * @param appointmentDate 예약 날짜
-     * @return 예약 가능한 시간 목록
-     */
-    public List<LocalTime> getAvailableTimesByDepartment(String department, LocalDate appointmentDate) {
-        // 기본 진료 시간 (09:00 ~ 17:00, 30분 간격)
-        List<LocalTime> allTimes = generateTimeSlots(LocalTime.of(9, 0), LocalTime.of(17, 0), 30);
-        
-        // 이미 예약된 시간 조회
-        List<LocalTime> bookedTimes = appointmentRepository.findBookedTimesByDepartmentAndDate(
-                department, appointmentDate, AppointmentStatus.BOOKED);
-        
-        // 예약 가능한 시간 = 전체 시간 - 예약된 시간
-        List<LocalTime> availableTimes = new ArrayList<>(allTimes);
-        availableTimes.removeAll(bookedTimes);
-        
-        log.info("진료과 '{}' {}일 예약 가능 시간: {}개", department, appointmentDate, availableTimes.size());
-        return availableTimes;
-    }
-
-
-    /**
-     * 지정된 시간 범위와 간격으로 시간 슬롯을 생성합니다.
-     * 
-     * @param startTime 시작 시간
-     * @param endTime 종료 시간  
-     * @param intervalMinutes 간격(분)
-     * @return 시간 슬롯 목록
-     */
-    private List<LocalTime> generateTimeSlots(LocalTime startTime, LocalTime endTime, int intervalMinutes) {
-        List<LocalTime> timeSlots = new ArrayList<>();
-        LocalTime current = startTime;
-        
-        while (current.isBefore(endTime)) {
-            timeSlots.add(current);
-            current = current.plusMinutes(intervalMinutes);
-        }
-        
-        return timeSlots;
-    }
 }
