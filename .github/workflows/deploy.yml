@@ -23,12 +23,14 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
+        script_stop: true
         script: |
           cd ~/carefreepass
           git pull origin main
           docker-compose up -d
           pkill -f "java.*carefreepass" || true
           sleep 2
-          nohup java -jar build/libs/*.jar > app.log 2>&1 & 
+          java -jar build/libs/*.jar > app.log 2>&1 &
           sleep 3
-          echo "App started successfully"
+          ps aux | grep java | grep -v grep
+          echo "Deployment completed successfully"
