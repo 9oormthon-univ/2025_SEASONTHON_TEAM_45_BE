@@ -72,4 +72,25 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
      */
     boolean existsByHospitalDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
             HospitalDepartment hospitalDepartment, LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status);
+
+    /**
+     * 환자별 예약 목록 조회 (최신순 정렬)
+     * 환자가 본인의 예약 내역을 확인할 때 사용됩니다.
+     * 
+     * @param memberId 환자 ID
+     * @return 최신 예약순으로 정렬된 예약 목록
+     */
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.member m JOIN FETCH a.hospitalDepartment hd JOIN FETCH hd.hospital WHERE m.id = :memberId ORDER BY a.appointmentDate DESC, a.appointmentTime DESC")
+    List<Appointment> findByMemberIdOrderByAppointmentDateDescAppointmentTimeDesc(@Param("memberId") Long memberId);
+
+    /**
+     * 환자의 특정 날짜 예약 조회
+     * 환자가 특정 날짜(주로 오늘)의 예약을 확인할 때 사용됩니다.
+     * 
+     * @param memberId 환자 ID  
+     * @param date 조회할 날짜
+     * @return 해당 날짜의 환자 예약 목록
+     */
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.member m JOIN FETCH a.hospitalDepartment hd JOIN FETCH hd.hospital WHERE m.id = :memberId AND a.appointmentDate = :date ORDER BY a.appointmentTime")
+    List<Appointment> findByMemberIdAndAppointmentDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
 }

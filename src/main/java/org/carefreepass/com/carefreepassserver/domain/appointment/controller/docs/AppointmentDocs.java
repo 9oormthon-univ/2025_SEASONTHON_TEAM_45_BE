@@ -12,6 +12,7 @@ import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.A
 import org.carefreepass.com.carefreepassserver.golbal.response.ApiResponseTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "예약 관리 API", description = "환자 예약 생성, 수정, 조회, 삭제 기능 (환자/관리자 권한별 구분)")
 public interface AppointmentDocs {
@@ -90,4 +91,27 @@ public interface AppointmentDocs {
             }
     )
     ApiResponseTemplate<String> updateAppointment(@PathVariable Long appointmentId, @Valid @RequestBody AppointmentUpdateRequest request);
+
+    // 환자용 예약 조회 API 문서화 추가
+    @Operation(
+            summary = "내 전체 예약 목록 조회 (환자 전용)",
+            description = "환자가 본인의 모든 예약 내역을 조회합니다. (과거/현재/미래 예약 포함)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "내 예약 목록 조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<List<AppointmentResponse>> getMyAppointments(@RequestParam Long memberId);
+
+    @Operation(
+            summary = "오늘 내 예약 조회 (환자 전용)",
+            description = "환자가 오늘 예정된 본인의 예약만 조회합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "오늘 내 예약 조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<List<AppointmentResponse>> getMyTodayAppointments(@RequestParam Long memberId);
 }

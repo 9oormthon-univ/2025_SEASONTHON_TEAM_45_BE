@@ -242,6 +242,26 @@ public class AppointmentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
     }
 
+    // 환자용 예약 조회 메서드 추가
+    public List<Appointment> getAppointmentsByMemberId(Long memberId) {
+        // 회원 존재 여부 확인
+        if (!memberRepository.existsById(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        
+        return appointmentRepository.findByMemberIdOrderByAppointmentDateDescAppointmentTimeDesc(memberId);
+    }
+
+    public List<Appointment> getTodayAppointmentsByMemberId(Long memberId) {
+        // 회원 존재 여부 확인
+        if (!memberRepository.existsById(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        
+        LocalDate today = LocalDate.now();
+        return appointmentRepository.findByMemberIdAndAppointmentDate(memberId, today);
+    }
+
     /**
      * 예약 상태를 내원 대기로 변경 (예약 시간 30분 전 등에 호출)
      * WAITING_BEFORE_ARRIVAL → BOOKED
