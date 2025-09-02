@@ -1,4 +1,4 @@
-package org.carefreepass.com.carefreepassserver.domain.auth.entity.domain;
+package org.carefreepass.com.carefreepassserver.domain.auth.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

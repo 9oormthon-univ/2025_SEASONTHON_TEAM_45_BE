@@ -7,15 +7,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.AccessTokenDto;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.RefreshTokenDto;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.TemporaryTokenDto;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TemporaryTokenResponse;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TokenPairResponse;
-import org.carefreepass.com.carefreepassserver.domain.auth.entity.domain.RefreshToken;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.RefreshToken;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.TemporaryMember;
 import org.carefreepass.com.carefreepassserver.domain.auth.repository.RefreshTokenRepository;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.carefreepass.com.carefreepassserver.golbal.util.JwtUtil;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -47,6 +49,15 @@ public class JwtTokenProvider {
         return jwtUtil.generateAccessTokenDto(memberId, memberRole);
     }
 
+    public TemporaryTokenResponse generateTemporaryToken(TemporaryMember temporaryMember) {
+        String temporaryToken = generateTemporaryTokenValue(temporaryMember);
+        return TemporaryTokenResponse.from(temporaryToken);
+    }
+
+    private String generateTemporaryTokenValue(TemporaryMember temporaryMember) {
+        return jwtUtil.generateTemporaryToken(temporaryMember.getId());
+    }
+
     public AccessTokenDto retrieveAccessToken(String accessTokenValue) {
         try {
             return jwtUtil.parseAccessToken(accessTokenValue);
@@ -62,12 +73,14 @@ public class JwtTokenProvider {
         return refreshTokenDto;
     }
 
-    public AccessTokenDto reissueAccessTokenIfExpired(String accessTokenValue) {
+    public TemporaryTokenDto retrieveTemporaryToken(String temporaryTokenValue) {
         try {
-            jwtUtil.parseAccessToken(accessTokenValue);
-            return null; // 토큰이 유효하면 재발급 불필요
+            return jwtUtil.parseTemporaryToken(temporaryTokenValue);
         } catch (ExpiredJwtException e) {
-            return reissueAccessTokenFromExpired(e);
+            throw new BusinessException(ErrorCode.TEMPORARY_TOKEN_EXPIRED);
+        } catch (Exception e) {
+            log.debug("Temporary Token 파싱 실패: {}", e.getMessage());
+            return null;
         }
     }
 

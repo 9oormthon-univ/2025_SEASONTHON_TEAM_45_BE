@@ -11,6 +11,7 @@ spring:
       - redis
       - firebase
       - security
+      - coolsms
 
 swagger:
   version: ${SWAGGER_VERSION:0.0.1}

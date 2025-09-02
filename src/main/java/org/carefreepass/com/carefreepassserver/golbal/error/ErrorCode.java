@@ -23,7 +23,10 @@ public enum ErrorCode {
     ALREADY_REGISTERED_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "PHONE_ALREADY_EXISTS", "이미 가입된 전화번호입니다. 다른 번호로 시도해주세요."),
     INVALID_PHONE_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_PHONE_FORMAT", "전화번호 형식이 올바르지 않습니다. (예: 01012345678)"),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD_FORMAT", "비밀번호는 영문, 숫자, 특수문자를 포함하여 8-20자로 입력해주세요."),
-    
+    INVALID_TEMPORARY_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_4015", "유효하지 않은 임시 토큰입니다."),
+    TEMPORARY_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_4014", "임시 토큰이 만료되었습니다."),
+    TEMPORARY_MEMBER_MISMATCH(HttpStatus.BAD_REQUEST, "TEMPORARY_MEMBER_MISMATCH", "임시 회원 정보와 일치하지 않는 전화번호입니다."),
+
     // 로그인 오류
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "등록되지 않은 전화번호입니다. 회원가입을 먼저 진행해주세요."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "INVALID_PASSWORD", "비밀번호가 틀렸습니다. 다시 확인해주세요."),
@@ -93,7 +96,14 @@ public enum ErrorCode {
     // 데이터베이스 관련
     DATABASE_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "DB_CONNECTION_ERROR", "데이터베이스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."),
     DATABASE_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "DB_TIMEOUT", "요청 처리 시간이 초과되었습니다. 다시 시도해주세요."),
-    
+
+    // 문자 인증 관련
+    SMS_VERIFICATION_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "SMS_4040", "문자 인증 코드가 존재하지 않습니다."),
+    SMS_VERIFICATION_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "SMS_4000", "문자 인증 코드가 일치하지 않습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SMS_5000", "SMS 전송에 실패했습니다."),
+    INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "SMS_4001", "유효하지 않은 전화번호 형식입니다."),
+    PHONE_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SMS_4002", "전화번호는 필수입니다."),
+
     // 외부 API 관련
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "EXTERNAL_API_ERROR", "외부 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."),
     OPENAI_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OPENAI_API_ERROR", "AI 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."),
