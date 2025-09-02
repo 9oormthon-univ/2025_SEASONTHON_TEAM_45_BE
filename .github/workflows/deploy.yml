@@ -27,7 +27,7 @@ jobs:
           cd ~/carefreepass
           git pull origin main
           docker-compose up -d
-          pkill -f "java.*carefreepass" || true
+          pkill -f "CareFreePass-Server" || true
           sleep 2
           nohup java -jar build/libs/*.jar > app.log 2>&1 &
           sleep 3
