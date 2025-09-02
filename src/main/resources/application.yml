@@ -13,6 +13,10 @@ spring:
       - security
       - coolsms
 
+server:
+  address: 0.0.0.0
+  port: 8080
+
 swagger:
   version: ${SWAGGER_VERSION:0.0.1}
   url: ${SWAGGER_URL:http://localhost:8080}
