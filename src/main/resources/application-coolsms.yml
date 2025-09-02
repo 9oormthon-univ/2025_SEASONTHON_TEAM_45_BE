@@ -1,0 +1,8 @@
+coolsms:
+  api-key: ${COOLSMS_API_KEY}
+  api-secret: ${COOLSMS_API_SECRET}
+  api-url: "https://api.solapi.com"
+  from-phone-number: ${COOLSMS_PHONE}
+  verification-code-length: ${COOLSMS_VERIFICATION_CODE_LENGTH}
+  verification-code-ttl: ${COOLSMS_VERIFICATION_CODE_TTL}
+  message-template: "[인증번호 : {code}] 케어프리 패스 인증번호입니다."
