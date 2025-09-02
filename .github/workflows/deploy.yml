@@ -18,20 +18,17 @@ jobs:
         distribution: 'temurin'
     
     - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.0
+      uses: fifsky/ssh-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
+        user: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        script_stop: true
-        script: |
+        command: |
           cd ~/carefreepass
           git pull origin main
           docker-compose up -d
           pkill -f "java.*carefreepass" || true
           sleep 2
-          setsid java -jar build/libs/*.jar > app.log 2>&1 < /dev/null &
+          nohup java -jar build/libs/*.jar > app.log 2>&1 &
           sleep 3
-          ps aux | grep java | grep -v grep || echo "Java process starting..."
           echo "Deployment completed successfully"
-          exit 0
