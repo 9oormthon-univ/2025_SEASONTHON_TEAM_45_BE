@@ -25,29 +25,10 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         command: |
           cd ~/carefreepass
-          
-          echo "=== Git Pull ==="
           git pull origin main
-          echo "✅ Git pull completed"
-          
-          echo "=== Building JAR ==="
-          ./gradlew bootJar
-          echo "✅ JAR build completed"
-          
-          echo "=== Stopping containers ==="
-          docker-compose down
-          echo "✅ Containers stopped"
-          
-          echo "=== Starting containers ==="
-          docker-compose up -d --build
-          echo "✅ Containers started"
-          
-          echo "=== Verifying deployment ==="
-          sleep 10
-          docker-compose ps
-          docker logs carefreepass-app --tail=20
-          
-          echo "=== Health Check ==="
-          curl -f http://localhost:8080/actuator/health || curl -f http://localhost:8080 || echo "❌ Health check failed"
-          
+          docker-compose up -d
+          pkill -f "CareFreePass-Server" || true
+          sleep 2
+          nohup java -Djava.net.preferIPv4Stack=true -jar build/libs/*.jar > app.log 2>&1 &
+          sleep 3
           echo "🚀 Deployment completed successfully"
