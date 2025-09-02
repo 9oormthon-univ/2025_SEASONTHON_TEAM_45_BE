@@ -29,6 +29,6 @@ jobs:
           docker-compose up -d
           pkill -f "CareFreePass-Server" || true
           sleep 2
-          nohup java -jar build/libs/*.jar > app.log 2>&1 &
+          nohup java -Djava.net.preferIPv4Stack=true -jar build/libs/*.jar > app.log 2>&1 &
           sleep 3
           echo "Deployment completed successfully"
