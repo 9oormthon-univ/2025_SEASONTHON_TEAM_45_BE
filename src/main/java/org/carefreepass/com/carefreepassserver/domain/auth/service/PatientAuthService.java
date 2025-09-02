@@ -30,21 +30,24 @@ public class PatientAuthService {
             throw new BusinessException(ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER);
         }
 
-        Member member = Member.createMember(MemberRole.USER, request.name(), request.phoneNumber(),
-                passwordEncoder.encode(request.password()));
+        Member member = Member.createPatient(
+                request.name(),
+                request.phoneNumber(),
+                passwordEncoder.encode(request.password())
+        );
         memberRepository.save(member);
 
         PatientProfile patientProfile = PatientProfile.createPatientProfile(member, request.birthDate(),
                 Gender.from(request.gender()));
         patientProfileRepository.save(patientProfile);
 
-        return jwtTokenProvider.generateTokenPair(member.getId(), member.getRole());
+        return jwtTokenProvider.generateTokenPair(member.getId(), member.getName(), member.getRole());
     }
 
     public TokenPairResponse patientSignInWithLocal(PatientSignInRequest request) {
         Member member = memberRepository.findByPhoneNumber(request.phoneNumber())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        return jwtTokenProvider.generateTokenPair(member.getId(), member.getRole());
+        return jwtTokenProvider.generateTokenPair(member.getId(), member.getName(), member.getRole());
     }
 }

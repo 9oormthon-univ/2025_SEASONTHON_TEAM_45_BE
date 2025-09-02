@@ -19,6 +19,7 @@ import org.carefreepass.com.carefreepassserver.golbal.domain.Status;
 @Getter
 @EqualsAndHashCode(callSuper = false, of = "id")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@org.hibernate.annotations.DynamicUpdate
 public class Member extends BaseTimeEntity {
 
     @Id
@@ -33,27 +34,44 @@ public class Member extends BaseTimeEntity {
 
     private String name;
 
-    @Column(name = "phone_number", unique = true, nullable = false)
+    @Column(name = "phone_number", unique = true)
     private String phoneNumber;
+
+    @Column(name = "email", unique = true)
+    private String email;
 
     @Column(nullable = false)
     private String password;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private Member(MemberRole role, Status status, String name, String phoneNumber, String password) {
+    private Member(MemberRole role, Status status,
+                   String name, String phoneNumber,
+                   String email, String password) {
         this.role = role;
         this.status = status;
         this.name = name;
         this.phoneNumber = phoneNumber;
+        this.email = email;
         this.password = password;
     }
 
-    public static Member createMember(MemberRole role, String name, String phoneNumber, String password) {
+    public static Member createPatient(String name, String phoneNumber, String password) {
         return Member.builder()
-                .role(role)
+                .role(MemberRole.USER)
                 .status(Status.ACTIVE)
                 .name(name)
                 .phoneNumber(phoneNumber)
+                .password(password)
+                .build();
+    }
+
+    // 병원 관리자용 생성자
+    public static Member createHospitalAdmin(String name, String email, String password) {
+        return Member.builder()
+                .role(MemberRole.HOSPITAL)
+                .status(Status.ACTIVE)
+                .name(name)
+                .email(email)
                 .password(password)
                 .build();
     }
