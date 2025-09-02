@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignInRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.request.PatientSignUpRequest;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TokenPairResponse;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.TemporaryMember;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Gender;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
@@ -25,9 +26,13 @@ public class PatientAuthService {
     private final MemberRepository memberRepository;
     private final PatientProfileRepository patientProfileRepository;
 
-    public TokenPairResponse patientSignUpWithLocal(PatientSignUpRequest request) {
+    public TokenPairResponse patientSignUpWithLocal(TemporaryMember temporaryMember, PatientSignUpRequest request) {
         if (memberRepository.existsByPhoneNumber(request.phoneNumber())) {
             throw new BusinessException(ErrorCode.ALREADY_REGISTERED_PHONE_NUMBER);
+        }
+
+        if (!temporaryMember.getPhoneNumber().equals(request.phoneNumber())) {
+            throw new BusinessException(ErrorCode.TEMPORARY_MEMBER_MISMATCH);
         }
 
         Member member = Member.createPatient(
@@ -47,6 +52,10 @@ public class PatientAuthService {
     public TokenPairResponse patientSignInWithLocal(PatientSignInRequest request) {
         Member member = memberRepository.findByPhoneNumber(request.phoneNumber())
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.password(), member.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+        }
 
         return jwtTokenProvider.generateTokenPair(member.getId(), member.getRole());
     }

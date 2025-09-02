@@ -16,7 +16,8 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.AccessTokenDto;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.RefreshTokenDto;
-import org.carefreepass.com.carefreepassserver.domain.auth.entity.domain.TokenType;
+import org.carefreepass.com.carefreepassserver.domain.auth.dto.TemporaryTokenDto;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.TokenType;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
 import org.carefreepass.com.carefreepassserver.golbal.properties.JwtProperties;
 import org.springframework.http.HttpHeaders;
@@ -71,6 +72,17 @@ public class JwtUtil {
                 memberId, tokenValue, jwtProperties.refreshTokenExpirationTime());
     }
 
+    public String generateTemporaryToken(String temporaryMemberId) {
+        TokenTimeInfo timeInfo = createTokenTimeInfo(jwtProperties.temporaryTokenExpirationTime());
+        return buildJwtToken(
+                TokenType.TEMPORARY,
+                temporaryMemberId,
+                Map.of(TOKEN_ROLE_NAME, MemberRole.TEMPORARY.name()),
+                timeInfo,
+                getTemporaryTokenKey()
+        );
+    }
+
     public AccessTokenDto parseAccessToken(String token) throws ExpiredJwtException {
         try {
             Jws<Claims> claims = parseTokenClaims(token, getAccessTokenKey());
@@ -103,6 +115,28 @@ public class JwtUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public TemporaryTokenDto parseTemporaryToken(String token) throws ExpiredJwtException {
+        try {
+            Jws<Claims> claims = parseTokenClaims(token, getTemporaryTokenKey());
+            Claims body = claims.getBody();
+
+            return new TemporaryTokenDto(
+                    body.getSubject(),
+                    MemberRole.valueOf(body.get(TOKEN_ROLE_NAME, String.class)),
+                    token,
+                    jwtProperties.temporaryTokenExpirationTime()
+            );
+        } catch (ExpiredJwtException e) {
+            throw e;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String extractTemporaryTokenFromHeader(HttpServletRequest request) {
+        return extractTokenFromAuthorizationHeader(request);
     }
 
     public static String extractTokenFromAuthorizationHeader(HttpServletRequest request) {
@@ -168,6 +202,10 @@ public class JwtUtil {
 
     private Key getRefreshTokenKey() {
         return Keys.hmacShaKeyFor(jwtProperties.refreshTokenSecret().getBytes());
+    }
+
+    private Key getTemporaryTokenKey() {
+        return Keys.hmacShaKeyFor(jwtProperties.temporaryTokenSecret().getBytes());
     }
 
     private record TokenTimeInfo(Date issuedAt, Date expiredAt) {
