@@ -46,7 +46,7 @@ public class AppointmentResponse {
                 appointment.getId(),
                 appointment.getMember().getName(),
                 appointment.getHospitalName(),
-                appointment.getDepartment(),
+                appointment.getDepartmentName(),
                 appointment.getAppointmentDate(),
                 appointment.getAppointmentTime(),
                 appointment.getStatus().name(),

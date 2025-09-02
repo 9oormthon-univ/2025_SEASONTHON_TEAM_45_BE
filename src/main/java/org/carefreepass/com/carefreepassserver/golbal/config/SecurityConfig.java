@@ -34,7 +34,8 @@ public class SecurityConfig {
                                                 "/favicon.ico",
                                                 "/static/**",
                                                 "/*.html",
-                                                "/firebase-messaging-sw.js"
+                                                "/firebase-messaging-sw.js",
+                                                "/ws/**"
                                         ).permitAll()
                                         .requestMatchers("/api/v1/auth/**")
                                         .permitAll()

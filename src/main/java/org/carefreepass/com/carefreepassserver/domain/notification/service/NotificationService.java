@@ -175,4 +175,59 @@ public class NotificationService {
             return notificationHistoryRepository.findTop100ByOrderByCreatedAtDesc();
         }
     }
+
+    /**
+     * 내원 준비 알림을 전송합니다. (예약 시간 30분 전 등)
+     * 환자에게 병원 출발 시간임을 알립니다.
+     * 
+     * @param appointmentId 예약 ID
+     * @param memberName 환자 이름
+     * @param hospitalName 병원 이름
+     * @param appointmentTime 예약 시간
+     * @return 알림 전송 성공 여부
+     */
+    @Transactional
+    public boolean sendPreArrivalReminder(Long appointmentId, String memberName, String hospitalName, String appointmentTime) {
+        // 예약 정보 조회
+        Optional<Appointment> appointment = appointmentRepository.findById(appointmentId);
+        if (appointment.isEmpty()) {
+            log.error("예약을 찾을 수 없음: 예약 ID {}", appointmentId);
+            return false;
+        }
+        
+        Long memberId = appointment.get().getMember().getId();
+        
+        // 환자의 활성 FCM 토큰 조회
+        Optional<DeviceToken> deviceToken = deviceTokenRepository.findActiveTokenByMemberId(memberId, Status.ACTIVE);
+        
+        if (deviceToken.isEmpty()) {
+            log.warn("⚠️ 활성 FCM 토큰을 찾을 수 없음: 회원 {} (ID: {})", memberName, memberId);
+            return false;
+        }
+        
+        // 알림 메시지 구성
+        String title = "내원 안내";
+        String message = String.format("%s님, %s 진료 시간이 30분 후입니다. 병원으로 출발하세요.", memberName, appointmentTime);
+        
+        // FCM 서비스를 통한 푸시 알림 전송
+        boolean success = fcmService.sendPreArrivalNotification(
+                deviceToken.get().getFcmToken(),
+                memberName,
+                hospitalName,
+                appointmentTime
+        );
+        
+        // 알림 전송 이력 저장
+        NotificationHistory history;
+        if (success) {
+            history = NotificationHistory.createSuccess(appointment.get(), title, message);
+            log.info("✅ 내원 준비 알림 전송 성공: {} (예약 ID: {})", memberName, appointmentId);
+        } else {
+            history = NotificationHistory.createFailure(appointment.get(), title, message, "FCM 전송 실패");
+            log.error("❌ 내원 준비 알림 전송 실패: {} (예약 ID: {})", memberName, appointmentId);
+        }
+        
+        notificationHistoryRepository.save(history);
+        return success;
+    }
 }

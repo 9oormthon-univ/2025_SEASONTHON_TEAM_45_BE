@@ -29,124 +29,61 @@ public class ChatController implements org.carefreepass.com.carefreepassserver.d
 
     @PostMapping("/start")
     public ApiResponseTemplate<ChatSessionResponse> startChatSession(@Valid @RequestBody ChatStartRequest request) {
-        try {
-            ChatSession session = aiChatService.startNewChatSession(request.getMemberId(), request.getInitialMessage());
-            ChatSessionResponse response = ChatSessionResponse.from(session);
-
-            return ApiResponseTemplate.ok()
-                    .body(response);
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("채팅 세션 시작 실패", e);
-            return ApiResponseTemplate.error()
-                    .code("CHAT_5001")
-                    .message("채팅 세션 시작에 실패했습니다.")
-                    .build();
-        }
+        ChatSession session = aiChatService.startNewChatSession(request.getMemberId(), request.getInitialMessage());
+        ChatSessionResponse response = ChatSessionResponse.from(session);
+        return ApiResponseTemplate.ok()
+                .code("CHAT_6001")
+                .message("채팅 세션이 성공적으로 시작되었습니다.")
+                .body(response);
     }
 
     @PostMapping("/message")
     public ApiResponseTemplate<ChatMessageResponse> sendMessage(@Valid @RequestBody ChatMessageRequest request) {
-        try {
-            ChatMessage aiMessage = aiChatService.sendMessage(
-                    request.getSessionId(),
-                    request.getMemberId(),
-                    request.getContent()
-            );
-
-            ChatMessageResponse response = ChatMessageResponse.from(aiMessage);
-
-            return ApiResponseTemplate.ok()
-                    .body(response);
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("메시지 전송 실패", e);
-            return ApiResponseTemplate.error()
-                    .code("CHAT_5002")
-                    .message("메시지 전송에 실패했습니다.")
-                    .build();
-        }
+        ChatMessage aiMessage = aiChatService.sendMessage(
+                request.getSessionId(),
+                request.getMemberId(),
+                request.getContent()
+        );
+        ChatMessageResponse response = ChatMessageResponse.from(aiMessage);
+        return ApiResponseTemplate.ok()
+                .code("CHAT_6002")
+                .message("메시지가 성공적으로 전송되었습니다.")
+                .body(response);
     }
 
     @GetMapping("/sessions")
     public ApiResponseTemplate<List<ChatSessionResponse>> getUserChatSessions(@RequestParam Long memberId) {
-        try {
-            List<ChatSession> sessions = aiChatService.getUserChatSessions(memberId);
-            List<ChatSessionResponse> responses = sessions.stream()
-                    .map(ChatSessionResponse::withoutMessages)
-                    .toList();
-
-            return ApiResponseTemplate.ok()
-                    .body(responses);
-
-        } catch (Exception e) {
-            log.error("채팅 세션 목록 조회 실패", e);
-            return ApiResponseTemplate.error()
-                    .code("CHAT_5003")
-                    .message("채팅 세션 목록 조회에 실패했습니다.")
-                    .build();
-        }
+        List<ChatSession> sessions = aiChatService.getUserChatSessions(memberId);
+        List<ChatSessionResponse> responses = sessions.stream()
+                .map(ChatSessionResponse::withoutMessages)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("CHAT_6003")
+                .message("채팅 세션 목록 조회가 완료되었습니다.")
+                .body(responses);
     }
 
     @GetMapping("/sessions/{sessionId}")
     public ApiResponseTemplate<ChatSessionResponse> getChatSession(
             @PathVariable Long sessionId,
             @RequestParam Long memberId) {
-        
-        try {
-            ChatSession session = aiChatService.getChatSession(sessionId, memberId);
-            ChatSessionResponse response = ChatSessionResponse.from(session);
-
-            return ApiResponseTemplate.ok()
-                    .body(response);
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("채팅 세션 상세 조회 실패", e);
-            return ApiResponseTemplate.error()
-                    .code("CHAT_5004")
-                    .message("채팅 세션 상세 조회에 실패했습니다.")
-                    .build();
-        }
+        ChatSession session = aiChatService.getChatSession(sessionId, memberId);
+        ChatSessionResponse response = ChatSessionResponse.from(session);
+        return ApiResponseTemplate.ok()
+                .code("CHAT_6004")
+                .message("채팅 세션 상세 조회가 완료되었습니다.")
+                .body(response);
     }
 
     @PutMapping("/sessions/{sessionId}/complete")
     public ApiResponseTemplate<String> completeChatSession(
             @PathVariable Long sessionId,
             @RequestParam Long memberId) {
-        
-        try {
-            aiChatService.completeChatSession(sessionId, memberId);
-
-            return ApiResponseTemplate.ok()
-                    .body("SUCCESS");
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("채팅 세션 완료 실패", e);
-            return ApiResponseTemplate.error()
-                    .code("CHAT_5005")
-                    .message("채팅 세션 완료에 실패했습니다.")
-                    .build();
-        }
+        aiChatService.completeChatSession(sessionId, memberId);
+        return ApiResponseTemplate.ok()
+                .code("CHAT_6005")
+                .message("채팅 세션이 성공적으로 완료되었습니다.")
+                .body("SUCCESS");
     }
 
     // WebSocket을 통한 실시간 메시징 (선택사항)

@@ -45,7 +45,7 @@ public class NotificationController implements NotificationDocs {
                     .message(e.getErrorCode().getMessage())
                     .build();
         } catch (Exception e) {
-            log.error("Failed to register FCM token", e);
+            log.error("FCM 토큰 등록 실패", e);
             return ApiResponseTemplate.error()
                     .code("NOTIFICATION_5001")
                     .message("FCM 토큰 등록에 실패했습니다.")
@@ -58,7 +58,7 @@ public class NotificationController implements NotificationDocs {
     @PostMapping("/call")
     public ApiResponseTemplate<String> callPatient(@Valid @RequestBody PatientCallRequest request) {
         try {
-            appointmentService.callPatient(request.getAppointmentId(), request.getRoomNumber());
+            appointmentService.callPatient(request.getAppointmentId());
 
             return ApiResponseTemplate.ok()
                     .body("SUCCESS");
@@ -74,7 +74,7 @@ public class NotificationController implements NotificationDocs {
                     .message(e.getMessage())
                     .build();
         } catch (Exception e) {
-            log.error("Failed to call patient", e);
+            log.error("환자 호출 실패", e);
             return ApiResponseTemplate.error()
                     .code("NOTIFICATION_5005")
                     .message("환자 호출에 실패했습니다.")
@@ -96,7 +96,7 @@ public class NotificationController implements NotificationDocs {
                     .body(responses);
 
         } catch (Exception e) {
-            log.error("Failed to get notification history", e);
+            log.error("알림 내역 조회 실패", e);
             return ApiResponseTemplate.error()
                     .code("NOTIFICATION_5006")
                     .message("알림 이력 조회에 실패했습니다.")
@@ -118,7 +118,7 @@ public class NotificationController implements NotificationDocs {
                     .body(responses);
 
         } catch (Exception e) {
-            log.error("Failed to get notification history for appointment: {}", appointmentId, e);
+            log.error("예약 알림 내역 조회 실패: {}", appointmentId, e);
             return ApiResponseTemplate.error()
                     .code("NOTIFICATION_5007")
                     .message("예약별 알림 이력 조회에 실패했습니다.")

@@ -31,6 +31,13 @@ public class JwtTokenProvider {
 
         return TokenPairResponse.of(accessToken, refreshToken);
     }
+    
+    public TokenPairResponse generateTokenPair(Long memberId, String memberName, MemberRole memberRole) {
+        String accessToken = generateAccessToken(memberId, memberRole);
+        String refreshToken = generateAndSaveRefreshToken(memberId);
+
+        return TokenPairResponse.of(accessToken, refreshToken, memberId, memberName, memberRole.name());
+    }
 
     public String generateAccessToken(Long memberId, MemberRole memberRole) {
         return jwtUtil.generateAccessToken(memberId, memberRole);

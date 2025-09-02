@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareFreePass 완전 테스트 페이지</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .current-user {
+            font-weight: bold;
+            color: #333;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .test-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .test-card:hover {
+            transform: translateY(-5px);
+            border-color: #4CAF50;
+        }
+        .test-card h3 {
+            color: #4CAF50;
+            margin-top: 0;
+            font-size: 1.3em;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 50px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .response.success {
+            background: #d1edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .response.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .auth-status {
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .auth-status.logged-in {
+            background: #d1edda;
+            color: #155724;
+        }
+        .auth-status.logged-out {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        /* Chat Window Styles */
+        #chatResponse.chat-window {
+            height: 300px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            white-space: normal; /* Override for chat */
+        }
+        .chat-message-item {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+        .chat-message-bubble {
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .chat-message-item.user {
+            align-items: flex-end;
+        }
+        .chat-message-item.user .chat-message-bubble {
+            background-color: #4CAF50;
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+        .chat-message-item.ai {
+            align-items: flex-start;
+        }
+        .chat-message-item.ai .chat-message-bubble {
+            background-color: #e4e6eb;
+            color: #333;
+            border-bottom-left-radius: 3px;
+        }
+        .chat-message-item.system .chat-message-bubble {
+            background-color: #fffbe6;
+            color: #8a6d3b;
+            font-style: italic;
+            font-size: 0.9em;
+            align-self: center;
+            text-align: center;
+        }
+        .chat-message-item.system-error .chat-message-bubble {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 CareFreePass 완전 테스트</h1>
+            <p>병원 예약 시스템 전체 기능 테스트</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="auth-status logged-out" id="authStatus">로그아웃 상태</div>
+            <div class="current-user" id="currentUser">로그인하세요</div>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn" onclick="quickPatientSignup()">빠른 환자 가입</button>
+            <button class="btn" onclick="quickPatientLogin()">빠른 환자 로그인</button>
+            <button class="btn" onclick="quickAdminSignup()">빠른 관리자 가입</button>
+            <button class="btn" onclick="quickAdminLogin()">빠른 관리자 로그인</button>
+            <button class="btn btn-secondary" onclick="clearAll()">전체 초기화</button>
+        </div>
+
+        <div class="test-grid">
+            <!-- 환자 회원가입 -->
+            <div class="test-card">
+                <h3>👤 환자 회원가입</h3>
+                <div class="form-group">
+                    <label>이름</label>
+                    <input type="text" id="patientName" value="김환자">
+                </div>
+                <div class="form-group">
+                    <label>성별</label>
+                    <select id="patientGender">
+                        <option value="남성">남성</option>
+                        <option value="여성">여성</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>생년월일 (YYYYMMDD)</label>
+                    <input type="text" id="patientBirthDate" value="19901201">
+                </div>
+                <div class="form-group">
+                    <label>전화번호</label>
+                    <input type="text" id="patientPhone" value="01012345678">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="patientPassword" value="testPass123!">
+                </div>
+                <button class="btn" onclick="patientSignup()">회원가입</button>
+                <div class="response" id="patientSignupResponse"></div>
+            </div>
+
+            <!-- 환자 로그인 -->
+            <div class="test-card">
+                <h3>🔑 환자 로그인</h3>
+                <div class="form-group">
+                    <label>전화번호</label>
+                    <input type="text" id="patientLoginPhone" value="01012345678">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="patientLoginPassword" value="testPass123!">
+                </div>
+                <button class="btn" onclick="patientLogin()">로그인</button>
+                <div class="response" id="patientLoginResponse"></div>
+            </div>
+
+            <!-- 병원관리자 회원가입 -->
+            <div class="test-card">
+                <h3>🏥 병원관리자 회원가입</h3>
+                <div class="form-group">
+                    <label>관리자 이름</label>
+                    <input type="text" id="adminName" value="김관리자">
+                </div>
+                <div class="form-group">
+                    <label>이메일</label>
+                    <input type="email" id="adminEmail" value="admin2@hospital.com">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="adminPassword" value="adminPass123!">
+                </div>
+                <div class="form-group">
+                    <label>병원명</label>
+                    <input type="text" id="hospitalName" value="구름대병원">
+                </div>
+                <div class="form-group">
+                    <label>병원주소</label>
+                    <input type="text" id="hospitalAddress" value="서울시 강남구 병원로 123">
+                </div>
+                <button class="btn" onclick="adminSignup()">관리자 가입</button>
+                <div class="response" id="adminSignupResponse"></div>
+            </div>
+
+            <!-- 병원관리자 로그인 -->
+            <div class="test-card">
+                <h3>🔑 관리자 로그인</h3>
+                <div class="form-group">
+                    <label>이메일</label>
+                    <input type="email" id="adminLoginEmail" value="admin2@hospital.com">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호</label>
+                    <input type="password" id="adminLoginPassword" value="adminPass123!">
+                </div>
+                <button class="btn" onclick="adminLogin()">로그인</button>
+                <div class="response" id="adminLoginResponse"></div>
+            </div>
+
+            <!-- AI 챗봇 & 예약 통합 -->
+            <div class="test-card" style="grid-column: 1 / -1; max-height: 600px;">
+                <h3>🤖 AI 챗봇 & 스마트 예약</h3>
+                <div class="chat-container" style="display: flex; gap: 20px; height: 500px;">
+                    <!-- 채팅 영역 -->
+                    <div style="flex: 2; display: flex; flex-direction: column;">
+                        <div class="response chat-window" id="chatResponse" style="flex: 1; overflow-y: auto; height: 400px; border: 2px solid #e9ecef; border-radius: 10px; padding: 15px; margin-bottom: 15px;"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <textarea id="chatMessage" placeholder="예: 머리가 아픈데 어느 과로 가야할까요?" style="flex: 1; resize: none; height: 40px;"></textarea>
+                            <button class="btn" id="chatStartBtn" onclick="startChat()" style="height: 40px; white-space: nowrap;">채팅 시작</button>
+                            <button class="btn" id="chatSendBtn" onclick="sendChatMessage()" style="display:none; height: 40px;">전송</button>
+                            <button class="btn btn-secondary" id="chatEndBtn" onclick="endChat()" style="display:none; height: 40px;">종료</button>
+                        </div>
+                    </div>
+                    <!-- 예약 정보 영역 -->
+                    <div style="flex: 1; border: 2px solid #e9ecef; border-radius: 10px; padding: 15px;">
+                        <h4 style="margin-top: 0; color: #4CAF50;">📅 예약 정보</h4>
+                        <div id="recommendedInfo" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                            <p><strong>💡 AI 추천:</strong></p>
+                            <div id="aiRecommendation">AI와 대화를 시작하면<br>맞춤 진료과 및 시간이<br>추천됩니다!</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>진료과</label>
+                            <select id="quickDepartment">
+                                <option value="">진료과 선택</option>
+                                <option value="내과">내과</option>
+                                <option value="외과">외과</option>
+                                <option value="소아과">소아과</option>
+                                <option value="정형외과">정형외과</option>
+                                <option value="피부과">피부과</option>
+                                <option value="신경과">신경과</option>
+                                <option value="정신건강의학과">정신건강의학과</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>예약 날짜</label>
+                            <input type="date" id="quickDate" min="" value="">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>예약 시간</label>
+                            <select id="quickTime">
+                                <option value="">시간 선택</option>
+                                <option value="10:00">10:00</option>
+                                <option value="10:30">10:30</option>
+                                <option value="11:00">11:00</option>
+                                <option value="11:30">11:30</option>
+                                <option value="14:00">14:00</option>
+                                <option value="14:30">14:30</option>
+                                <option value="15:00">15:00</option>
+                                <option value="15:30">15:30</option>
+                                <option value="16:00">16:00</option>
+                                <option value="16:30">16:30</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn" onclick="makeQuickReservation()" style="width: 100%; margin-top: 10px;">
+                            🏥 빠른 예약하기
+                        </button>
+                        
+                        <div id="quickReservationResult" class="response" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 병원 관리자 - 진료과 관리 -->
+            <div class="test-card">
+                <h3>🏥 진료과 관리 (관리자용)</h3>
+                <div class="form-group">
+                    <label>진료과명</label>
+                    <input type="text" id="departmentName" value="내과">
+                </div>
+                <div class="form-group">
+                    <label>진료과 설명</label>
+                    <input type="text" id="departmentDescription" value="내과 진료를 담당합니다">
+                </div>
+                <button class="btn" onclick="createDepartment()">진료과 생성</button>
+                <button class="btn btn-secondary" onclick="getDepartments()">진료과 목록</button>
+                <div class="response" id="departmentResponse"></div>
+            </div>
+
+            <!-- 병원 관리자 - 시간 차단 관리 -->
+            <div class="test-card">
+                <h3>⏰ 시간 차단 관리 (관리자용)</h3>
+                <div class="form-group">
+                    <label>진료과 ID (Hospital Department ID)</label>
+                    <input type="number" id="blockDepartmentId" value="1">
+                </div>
+                <div class="form-group">
+                    <label>차단할 날짜</label>
+                    <input type="date" id="blockDate">
+                </div>
+                <div class="form-group">
+                    <label>차단할 시간</label>
+                    <select id="blockTime">
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="11:30">11:30</option>
+                        <option value="14:00">14:00</option>
+                        <option value="14:30">14:30</option>
+                        <option value="15:00">15:00</option>
+                        <option value="15:30">15:30</option>
+                        <option value="16:00">16:00</option>
+                        <option value="16:30">16:30</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="blockTimeSlot()">시간 차단</button>
+                <button class="btn btn-secondary" onclick="getBlockedTimeSlots()">차단 시간 조회</button>
+                <div class="response" id="timeBlockResponse"></div>
+            </div>
+
+            <!-- 환자 - 시간대 조회 -->
+            <div class="test-card">
+                <h3>📅 예약 가능 시간 조회 (환자용)</h3>
+                <div class="form-group">
+                    <label>병원 ID</label>
+                    <input type="number" id="availableHospitalId" value="1">
+                </div>
+                <div class="form-group">
+                    <label>진료과명</label>
+                    <select id="availableDepartment">
+                        <option value="">진료과 선택</option>
+                        <option value="내과">내과</option>
+                        <option value="외과">외과</option>
+                        <option value="소아과">소아과</option>
+                        <option value="정형외과">정형외과</option>
+                        <option value="피부과">피부과</option>
+                        <option value="신경과">신경과</option>
+                        <option value="정신건강의학과">정신건강의학과</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>예약 희망 날짜</label>
+                    <input type="date" id="availableDate">
+                </div>
+                <button class="btn" onclick="getAvailableTimeSlots()">시간대 조회</button>
+                <div class="response" id="availableTimeSlotsResponse"></div>
+            </div>
+
+            <!-- 환자 - 예약 생성 -->
+            <div class="test-card">
+                <h3>📋 예약 생성 (환자용)</h3>
+                <div class="form-group">
+                    <label>병원 ID</label>
+                    <input type="number" id="appointmentHospitalId" value="1">
+                </div>
+                <div class="form-group">
+                    <label>진료과명</label>
+                    <select id="appointmentDepartment">
+                        <option value="">진료과 선택</option>
+                        <option value="내과">내과</option>
+                        <option value="외과">외과</option>
+                        <option value="소아과">소아과</option>
+                        <option value="정형외과">정형외과</option>
+                        <option value="피부과">피부과</option>
+                        <option value="신경과">신경과</option>
+                        <option value="정신건강의학과">정신건강의학과</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>예약 날짜</label>
+                    <input type="date" id="appointmentDate">
+                </div>
+                <div class="form-group">
+                    <label>예약 시간</label>
+                    <select id="appointmentTime">
+                        <option value="">시간 선택</option>
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="11:30">11:30</option>
+                        <option value="14:00">14:00</option>
+                        <option value="14:30">14:30</option>
+                        <option value="15:00">15:00</option>
+                        <option value="15:30">15:30</option>
+                        <option value="16:00">16:00</option>
+                        <option value="16:30">16:30</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createAppointment()">예약하기</button>
+                <div class="response" id="appointmentResponse"></div>
+            </div>
+
+            <!-- 예약 관리 -->
+            <div class="test-card">
+                <h3>📝 예약 관리</h3>
+                <button class="btn" onclick="getTodayAppointments()">오늘 예약 조회</button>
+                <button class="btn" onclick="getWaitingPatients()">대기 환자 조회</button>
+                <button class="btn btn-secondary" onclick="getMyAppointments()" title="현재 API 미구현">내 예약 조회</button>
+                
+                <div style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label>예약 ID (체크인/상태변경용)</label>
+                        <input type="number" id="appointmentId" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>상태 변경</label>
+                        <select id="appointmentStatus">
+                            <option value="WAITING">대기</option>
+                            <option value="CHECKED_IN">체크인</option>
+                            <option value="IN_PROGRESS">진료중</option>
+                            <option value="COMPLETED">완료</option>
+                            <option value="CANCELLED">취소</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="checkinAppointment()">체크인</button>
+                    <button class="btn" onclick="updateAppointmentStatus()">상태 변경</button>
+                    <button class="btn" onclick="callPatient()">환자 호출</button>
+                </div>
+                <div class="response" id="appointmentManagementResponse"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+        let stompClient = null;
+        let chatSessionId = null;
+
+        // 토큰 관리
+        function saveToken(token, userType, userInfo) {
+            localStorage.setItem('jwt_token', token);
+            localStorage.setItem('user_type', userType);
+            localStorage.setItem('user_info', JSON.stringify(userInfo));
+            updateAuthStatus();
+        }
+        
+        function getToken() {
+            return localStorage.getItem('jwt_token');
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_type');
+            localStorage.removeItem('user_info');
+            endChat();
+            updateAuthStatus();
+        }
+        
+        function getUserInfo() {
+            const userInfo = localStorage.getItem('user_info');
+            return userInfo ? JSON.parse(userInfo) : null;
+        }
+        
+        function getUserType() {
+            return localStorage.getItem('user_type');
+        }
+        
+        // 인증 상태 업데이트
+        function updateAuthStatus() {
+            const token = getToken();
+            const userType = getUserType();
+            const userInfo = getUserInfo();
+            const authStatus = document.getElementById('authStatus');
+            const currentUser = document.getElementById('currentUser');
+            
+            if (token && userType && userInfo) {
+                authStatus.className = 'auth-status logged-in';
+                authStatus.textContent = '로그인 상태';
+                if (userType === 'patient') {
+                    currentUser.textContent = `환자: ${userInfo.name} (ID: ${userInfo.id})`;
+                } else if (userType === 'admin') {
+                    currentUser.textContent = `관리자: ${userInfo.adminName} (${userInfo.hospitalName})`;
+                }
+            } else {
+                authStatus.className = 'auth-status logged-out';
+                authStatus.textContent = '로그아웃 상태';
+                currentUser.textContent = '로그인하세요';
+            }
+        }
+        
+        // API 호출 공통 함수
+        async function apiCall(endpoint, method = 'GET', data = null, responseId = null, needAuth = false) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (needAuth) {
+                    const token = getToken();
+                    if (token) {
+                        options.headers['Authorization'] = `Bearer ${token}`;
+                    } else {
+                         throw new Error("인증 토큰이 없습니다. 먼저 로그인하세요.");
+                    }
+                }
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${BASE_URL}${endpoint}`, options);
+                const result = await response.json();
+                
+                if (responseId) {
+                    const responseElement = document.getElementById(responseId);
+                    if (response.ok && result.code !== 'SERVER_ERROR' && result.code == null) {
+                        responseElement.className = 'response success';
+                        responseElement.textContent = `Status: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`;
+                    } else {
+                        responseElement.className = 'response error';
+                        responseElement.textContent = `Status: ${response.status}\nError: ${JSON.stringify(result, null, 2)}`;
+                    }
+                }
+                
+                return { ok: response.ok, status: response.status, body: result };
+                
+            } catch (error) {
+                if (responseId) {
+                    const responseElement = document.getElementById(responseId);
+                    responseElement.className = 'response error';
+                    responseElement.textContent = `Network Error: ${error.message}`;
+                }
+                return { ok: false, error: error.message };
+            }
+        }
+        
+        // --- 챗봇 스크립트 (업그레이드) ---
+        async function startChat() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'patient') {
+                alert('환자 로그인이 필요합니다.');
+                return;
+            }
+
+            const initialMessage = document.getElementById('chatMessage').value;
+            if (!initialMessage.trim()) {
+                alert('첫 메시지를 입력해주세요.');
+                return;
+            }
+
+            // AI 추천 초기화
+            document.getElementById('aiRecommendation').innerHTML = '분석 중입니다... 🤔';
+            
+            // 1. REST API로 채팅 세션 시작
+            const result = await apiCall('/api/v1/chat/start', 'POST', {
+                memberId: userInfo.id,
+                initialMessage: initialMessage
+            }, null, true);
+
+            if (!result.ok || !result.body.data) {
+                alert('채팅 세션 시작에 실패했습니다: ' + JSON.stringify(result.body));
+                document.getElementById('aiRecommendation').innerHTML = 'AI와 대화를 시작하면<br>맞춤 진료과 및 시간이<br>추천됩니다!';
+                return;
+            }
+
+            chatSessionId = result.body.data.sessionId;
+            
+            // UI를 채팅 모드로 변경
+            const chatResponse = document.getElementById('chatResponse');
+            chatResponse.innerHTML = ''; // 채팅창 초기화
+            chatResponse.className = 'response chat-window'; // 채팅창 스타일 적용
+
+            document.getElementById('chatStartBtn').style.display = 'none';
+            document.getElementById('chatSendBtn').style.display = 'inline-block';
+            document.getElementById('chatEndBtn').style.display = 'inline-block';
+            document.getElementById('chatMessage').value = '';
+            document.getElementById('chatMessage').placeholder = '추가 증상이나 궁금한 것을 물어보세요...';
+
+            // 첫 메시지들 표시
+            displayChatMessage(initialMessage, 'user');
+            const firstAiMessage = result.body.data.messages.find(m => m.senderType === 'AI');
+            if (firstAiMessage) {
+                displayChatMessage(firstAiMessage.content, 'ai');
+            }
+
+            // 2. WebSocket 연결
+            connectWebSocket();
+        }
+
+        function connectWebSocket() {
+            // WebSocket 연결 시도하되, 실패해도 REST API 사용
+            if (stompClient && stompClient.connected) return;
+
+            const token = getToken();
+            if (!token) {
+                console.warn('WebSocket 연결을 위한 토큰이 없습니다. REST API를 사용합니다.');
+                displayChatMessage('채팅 준비 완료 (REST API 모드)', 'system');
+                return;
+            }
+
+            try {
+                const socket = new SockJS(`${BASE_URL}/ws/chat`);
+                stompClient = Stomp.over(socket);
+
+                const headers = {
+                    'Authorization': `Bearer ${token}`
+                };
+
+                stompClient.connect(headers, function (frame) {
+                    console.log('WebSocket Connected: ' + frame);
+                    displayChatMessage('채팅 서버에 연결되었습니다. (WebSocket 모드)', 'system');
+                    
+                    stompClient.subscribe('/topic/chat', function (message) {
+                        const chatMessage = JSON.parse(message.body);
+                        console.log('WebSocket 메시지 수신:', chatMessage);
+                        // AI 메시지만 표시 (senderType이 AI인 경우)
+                        if (chatMessage.senderType === 'AI') {
+                            displayChatMessage(chatMessage.content, 'ai');
+                            updateAIRecommendation(chatMessage.content);
+                        }
+                    });
+
+                }, function(error) {
+                    console.warn('WebSocket 연결 실패, REST API로 대체:', error);
+                    stompClient = null;
+                    displayChatMessage('채팅 준비 완료 (REST API 모드)', 'system');
+                });
+            } catch (error) {
+                console.warn('WebSocket 초기화 실패, REST API로 대체:', error);
+                stompClient = null;
+                displayChatMessage('채팅 준비 완료 (REST API 모드)', 'system');
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatMessage');
+            const messageContent = input.value.trim();
+            const userInfo = getUserInfo();
+
+            if (!messageContent) {
+                alert('메시지를 입력해주세요.');
+                return;
+            }
+
+            if (!chatSessionId) {
+                alert('먼저 채팅 시작을 하세요.');
+                return;
+            }
+
+            // 사용자 메시지 표시
+            displayChatMessage(messageContent, 'user');
+            input.value = '';
+
+            // WebSocket이 연결되어 있으면 WebSocket 사용, 아니면 REST API 사용
+            if (stompClient && stompClient.connected) {
+                // WebSocket으로 전송
+                const chatMessage = {
+                    sessionId: chatSessionId,
+                    memberId: userInfo.id,
+                    content: messageContent
+                };
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            } else {
+                // REST API로 전송
+                try {
+                    const response = await apiCall('/api/v1/chat/message', 'POST', {
+                        sessionId: chatSessionId,
+                        memberId: userInfo.id,
+                        content: messageContent
+                    }, null, true);
+
+                    if (response.ok && response.body.data) {
+                        displayChatMessage(response.body.data.content, 'ai');
+                        updateAIRecommendation(response.body.data.content);
+                    } else {
+                        displayChatMessage('AI 응답을 받지 못했습니다.', 'system-error');
+                    }
+                } catch (error) {
+                    console.error('메시지 전송 실패:', error);
+                    displayChatMessage('메시지 전송에 실패했습니다.', 'system-error');
+                }
+            }
+        }
+
+        function endChat() {
+            if (stompClient) {
+                stompClient.disconnect(() => {
+                    console.log('Disconnected');
+                });
+                stompClient = null;
+            }
+            chatSessionId = null;
+
+            // UI를 초기 상태로 복원
+            const chatResponse = document.getElementById('chatResponse');
+            chatResponse.innerHTML = '';
+            chatResponse.className = 'response';
+
+            document.getElementById('chatStartBtn').style.display = 'inline-block';
+            document.getElementById('chatSendBtn').style.display = 'none';
+            document.getElementById('chatEndBtn').style.display = 'none';
+            document.getElementById('chatMessageLabel').textContent = '메시지';
+        }
+
+        function displayChatMessage(message, type) {
+            const chatWindow = document.getElementById('chatResponse');
+            const messageItem = document.createElement('div');
+            messageItem.className = 'chat-message-item ' + type;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-message-bubble';
+            bubble.textContent = message;
+
+            messageItem.appendChild(bubble);
+            chatWindow.appendChild(messageItem);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // AI 추천 정보 업데이트 함수
+        function updateAIRecommendation(message) {
+            const recommendation = document.getElementById('aiRecommendation');
+            
+            // AI 메시지에서 진료과 추천 추출
+            const departmentMatches = message.match(/([가-힣]+과|내과|외과)/g);
+            if (departmentMatches) {
+                const suggestedDepartment = departmentMatches[0];
+                document.getElementById('quickDepartment').value = suggestedDepartment;
+                recommendation.innerHTML = `<strong>🏥 추천 진료과:</strong> ${suggestedDepartment}<br><small>AI가 증상을 분석하여 추천한 진료과입니다.</small>`;
+                
+                // 내일 날짜로 자동 설정
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('quickDate').value = tomorrow.toISOString().split('T')[0];
+            }
+        }
+
+        // 빠른 예약 함수
+        async function makeQuickReservation() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'patient') {
+                alert('환자 로그인이 필요합니다.');
+                return;
+            }
+
+            const department = document.getElementById('quickDepartment').value;
+            const date = document.getElementById('quickDate').value;
+            const time = document.getElementById('quickTime').value;
+
+            if (!department || !date || !time) {
+                alert('진료과, 날짜, 시간을 모두 선택해주세요.');
+                return;
+            }
+
+            const data = {
+                memberId: userInfo.id,
+                hospitalId: 1, // 구름대병원 고정
+                departmentName: department,
+                appointmentDate: date,
+                appointmentTime: time
+            };
+
+            const result = await apiCall('/api/v1/appointments', 'POST', data, 'quickReservationResult');
+            if (result.ok && result.body.data) {
+                document.getElementById('aiRecommendation').innerHTML = `
+                    <strong>✅ 예약 완료!</strong><br>
+                    예약 ID: ${result.body.data}<br>
+                    날짜: ${date} ${time}<br>
+                    진료과: ${department}
+                `;
+                
+                // 채팅창에 예약 완료 메시지 표시
+                if (chatSessionId) {
+                    displayChatMessage(`예약이 완료되었습니다! 예약 ID: ${result.body.data}`, 'system');
+                }
+            }
+        }
+
+        // 채팅 메시지 표시 함수 개선
+        function displayChatMessage(message, type) {
+            const chatWindow = document.getElementById('chatResponse');
+            const messageItem = document.createElement('div');
+            messageItem.className = 'chat-message-item ' + type;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-message-bubble';
+            bubble.innerHTML = message.replace(/\n/g, '<br>');
+            
+            messageItem.appendChild(bubble);
+            chatWindow.appendChild(messageItem);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            
+            // AI 메시지인 경우 추천 정보 업데이트
+            if (type === 'ai') {
+                updateAIRecommendation(message);
+            }
+        }
+
+        // --- 예약 관리 함수들 ---
+        
+        // 병원 관리자 - 진료과 생성
+        async function createDepartment() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('departmentName').value,
+                description: document.getElementById('departmentDescription').value
+            };
+
+            // hospitalId는 관리자의 병원 ID를 사용 (실제로는 병원 정보에서 가져와야 함)
+            const hospitalId = 1; // 임시로 1번 병원 사용
+            await apiCall(`/api/v1/admin/hospitals/${hospitalId}/departments`, 'POST', data, 'departmentResponse', true);
+        }
+
+        // 병원 관리자 - 진료과 목록 조회
+        async function getDepartments() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                return;
+            }
+
+            // hospitalId는 관리자의 병원 ID를 사용 (실제로는 병원 정보에서 가져와야 함)
+            const hospitalId = 1; // 임시로 1번 병원 사용
+            await apiCall(`/api/v1/admin/hospitals/${hospitalId}/departments`, 'GET', null, 'departmentResponse', true);
+        }
+
+        // 병원 관리자 - 시간 차단
+        async function blockTimeSlot() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                return;
+            }
+
+            const data = {
+                departmentId: parseInt(document.getElementById('blockDepartmentId').value),
+                blockDate: document.getElementById('blockDate').value,
+                blockTime: document.getElementById('blockTime').value
+            };
+
+            await apiCall(`/api/v1/admin/time-slots/block`, 'POST', data, 'timeBlockResponse', true);
+        }
+
+        // 병원 관리자 - 차단된 시간 조회
+        async function getBlockedTimeSlots() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                return;
+            }
+
+            const departmentId = document.getElementById('blockDepartmentId').value;
+            
+            await apiCall(`/api/v1/admin/time-slots/blocked?departmentId=${departmentId}`, 'GET', null, 'timeBlockResponse', true);
+        }
+
+        // 환자 - 예약 가능 시간 조회
+        async function getAvailableTimeSlots() {
+            if (getUserType() !== 'patient') {
+                alert('환자 로그인이 필요합니다.');
+                return;
+            }
+
+            const hospitalId = document.getElementById('availableHospitalId').value;
+            const department = document.getElementById('availableDepartment').value;
+            const date = document.getElementById('availableDate').value;
+
+            if (!department || !date) {
+                alert('진료과와 날짜를 선택해주세요.');
+                return;
+            }
+
+            await apiCall(`/api/v1/patient/time-slots?hospitalId=${hospitalId}&departmentName=${department}&date=${date}`, 'GET', null, 'availableTimeSlotsResponse', true);
+        }
+
+        // 환자 - 예약 생성
+        async function createAppointment() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'patient') {
+                alert('환자 로그인이 필요합니다.');
+                return;
+            }
+
+            const data = {
+                memberId: userInfo.id,
+                hospitalId: parseInt(document.getElementById('appointmentHospitalId').value),
+                departmentName: document.getElementById('appointmentDepartment').value,
+                appointmentDate: document.getElementById('appointmentDate').value,
+                appointmentTime: document.getElementById('appointmentTime').value
+            };
+
+            if (!data.departmentName || !data.appointmentDate || !data.appointmentTime) {
+                alert('진료과, 날짜, 시간을 모두 선택해주세요.');
+                return;
+            }
+
+            await apiCall('/api/v1/appointments', 'POST', data, 'appointmentResponse', true);
+        }
+
+        // 예약 관리 - 오늘 예약 조회
+        async function getTodayAppointments() {
+            const userType = getUserType();
+            if (!userType) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 실제 API 경로에 맞게 수정
+            await apiCall('/api/v1/appointments/today', 'GET', null, 'appointmentManagementResponse', true);
+        }
+
+        // 예약 관리 - 대기 환자 조회 (관리자용)
+        async function getWaitingPatients() {
+            if (getUserType() !== 'admin') {
+                alert('관리자 로그인이 필요합니다.');
+                return;
+            }
+
+            await apiCall('/api/v1/appointments/today/waiting', 'GET', null, 'appointmentManagementResponse', true);
+        }
+
+        // 예약 관리 - 내 예약 조회 (환자용) - 현재 API가 구현되지 않음
+        async function getMyAppointments() {
+            const userInfo = getUserInfo();
+            if (getUserType() !== 'patient') {
+                alert('환자 로그인이 필요합니다.');
+                return;
+            }
+
+            // 현재 내 예약 조회 API가 구현되어 있지 않습니다. 
+            // 오늘 예약 조회로 대체합니다.
+            document.getElementById('appointmentManagementResponse').className = 'response error';
+            document.getElementById('appointmentManagementResponse').textContent = '내 예약 조회 API가 아직 구현되지 않았습니다. 오늘 예약 조회를 사용해주세요.';
+        }
+
+        // 예약 관리 - 체크인
+        async function checkinAppointment() {
+            const appointmentId = document.getElementById('appointmentId').value;
+            const userInfo = getUserInfo();
+            if (!appointmentId) {
+                alert('예약 ID를 입력해주세요.');
+                return;
+            }
+
+            const data = {
+                appointmentId: parseInt(appointmentId),
+                memberId: userInfo ? userInfo.id : 1
+            };
+
+            await apiCall('/api/v1/appointments/checkin', 'PUT', data, 'appointmentManagementResponse', true);
+        }
+
+        // 예약 관리 - 상태 변경
+        async function updateAppointmentStatus() {
+            const appointmentId = document.getElementById('appointmentId').value;
+            const status = document.getElementById('appointmentStatus').value;
+            
+            if (!appointmentId || !status) {
+                alert('예약 ID와 상태를 선택해주세요.');
+                return;
+            }
+
+            await apiCall(`/api/v1/appointments/${appointmentId}/status/${status}`, 'PUT', null, 'appointmentManagementResponse', true);
+        }
+
+        // 예약 관리 - 환자 호출 (알림 기능)
+        async function callPatient() {
+            const appointmentId = document.getElementById('appointmentId').value;
+            if (!appointmentId) {
+                alert('예약 ID를 입력해주세요.');
+                return;
+            }
+
+            const data = {
+                appointmentId: parseInt(appointmentId),
+                roomNumber: "101호" // 기본값으로 설정
+            };
+
+            await apiCall('/api/v1/notifications/call', 'POST', data, 'appointmentManagementResponse', true);
+        }
+
+        // --- 나머지 함수들 ---
+        async function patientSignup() {
+            const data = {
+                name: document.getElementById('patientName').value,
+                gender: document.getElementById('patientGender').value,
+                birthDate: document.getElementById('patientBirthDate').value,
+                phoneNumber: document.getElementById('patientPhone').value,
+                password: document.getElementById('patientPassword').value
+            };
+            await apiCall('/api/v1/auth/patient/sign-up', 'POST', data, 'patientSignupResponse');
+        }
+        
+        async function patientLogin() {
+            const data = {
+                phoneNumber: document.getElementById('patientLoginPhone').value,
+                password: document.getElementById('patientLoginPassword').value
+            };
+            const result = await apiCall('/api/v1/auth/patient/sign-in', 'POST', data, 'patientLoginResponse');
+            
+            if (result.ok && result.body && result.body.data && result.body.data.accessToken) {
+                const token = result.body.data.accessToken;
+                const loginData = result.body.data;
+                
+                const userInfo = {
+                    id: loginData.memberId,
+                    name: loginData.memberName,
+                    phoneNumber: data.phoneNumber,
+                    role: loginData.role
+                };
+                saveToken(token, 'patient', userInfo);
+                
+                const responseElement = document.getElementById('patientLoginResponse');
+                responseElement.textContent += '\n\n✅ 로그인 성공! JWT 토큰이 저장되었습니다.';
+                responseElement.textContent += `\n사용자 ID: ${userInfo.id}`;
+                responseElement.textContent += `\n사용자 이름: ${userInfo.name}`;
+            }
+        }
+        
+        async function adminSignup() {
+            const data = {
+                adminName: document.getElementById('adminName').value,
+                adminEmail: document.getElementById('adminEmail').value,
+                adminPassword: document.getElementById('adminPassword').value,
+                hospitalName: document.getElementById('hospitalName').value,
+                hospitalAddress: document.getElementById('hospitalAddress').value
+            };
+            await apiCall('/api/v1/auth/hospital/sign-up', 'POST', data, 'adminSignupResponse');
+        }
+        
+        async function adminLogin() {
+            const data = {
+                adminEmail: document.getElementById('adminLoginEmail').value,
+                adminPassword: document.getElementById('adminLoginPassword').value
+            };
+            const result = await apiCall('/api/v1/auth/hospital/sign-in', 'POST', data, 'adminLoginResponse');
+            
+            if (result.ok && result.body && result.body.data && result.body.data.accessToken) {
+                const token = result.body.data.accessToken;
+                const loginData = result.body.data;
+                
+                const userInfo = {
+                    id: loginData.memberId,
+                    adminName: loginData.memberName,
+                    hospitalName: "구름대병원", // 실제로는 병원 정보도 응답에 포함시켜야 함
+                    adminEmail: data.adminEmail,
+                    role: loginData.role
+                };
+                saveToken(token, 'admin', userInfo);
+                
+                const responseElement = document.getElementById('adminLoginResponse');
+                responseElement.textContent += '\n\n✅ 로그인 성공! JWT 토큰이 저장되었습니다.';
+                responseElement.textContent += `\n관리자 ID: ${userInfo.id}`;
+                responseElement.textContent += `\n관리자 이름: ${userInfo.adminName}`;
+            }
+        }
+
+        function quickPatientSignup() { patientSignup(); }
+        function quickPatientLogin() { patientLogin(); }
+        function quickAdminSignup() { adminSignup(); }
+        function quickAdminLogin() { adminLogin(); }
+        
+        function logout() {
+            clearAuth();
+            clearAll();
+            alert('로그아웃되었습니다.');
+        }
+        
+        function clearAll() {
+            const responses = document.querySelectorAll('.response');
+            responses.forEach(response => {
+                response.textContent = '';
+                response.className = 'response';
+            });
+            endChat();
+        }
+        
+        window.onload = function() {
+            updateAuthStatus();
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            
+            // 기존 날짜 필드들 초기화
+            ['blockDate', 'availableDate', 'appointmentDate'].forEach(id => {
+                if(document.getElementById(id)) document.getElementById(id).value = today;
+            });
+            
+            // AI 챗봇 예약 날짜 초기화 (내일 날짜로)
+            if(document.getElementById('quickDate')) {
+                document.getElementById('quickDate').value = tomorrowStr;
+                document.getElementById('quickDate').min = today; // 오늘 이후만 선택 가능
+            }
+        };
+    </script>
+</body>
+</html>

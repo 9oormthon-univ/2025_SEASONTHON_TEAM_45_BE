@@ -15,13 +15,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppointmentUpdateRequest {
 
-    @Schema(description = "병원명", example = "서울대학교병원")
-    @NotBlank(message = "병원명은 필수입니다.")
-    private String hospitalName;
+    @Schema(description = "병원 ID", example = "1")
+    @NotNull(message = "병원 ID는 필수입니다.")
+    private Long hospitalId;
 
-    @Schema(description = "진료과", example = "내과")
-    @NotBlank(message = "진료과는 필수입니다.")
-    private String department;
+    @Schema(description = "진료과명", example = "내과")
+    @NotBlank(message = "진료과명은 필수입니다.")
+    private String departmentName;
 
     @Schema(description = "예약 날짜", example = "2024-12-31")
     @NotNull(message = "예약 날짜는 필수입니다.")
