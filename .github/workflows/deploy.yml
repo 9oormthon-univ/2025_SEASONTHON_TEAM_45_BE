@@ -26,9 +26,7 @@ jobs:
         command: |
           cd ~/carefreepass
           git pull origin main
-          docker-compose up -d
-          pkill -f "CareFreePass-Server" || true
-          sleep 2
-          nohup java -Djava.net.preferIPv4Stack=true -jar build/libs/*.jar > app.log 2>&1 &
-          sleep 3
+          ./gradlew bootJar
+          docker-compose down
+          docker-compose up -d --build
           echo "Deployment completed successfully"
