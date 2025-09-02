@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.carefreepass.com.carefreepassserver.domain.appointment.controller.docs.PatientTimeSlotDocs;
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.AvailableTimeSlotsResponse;
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.TimeSlotResponse;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.TimeSlotService;
@@ -22,18 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/patient/time-slots")
 @Slf4j
-public class PatientTimeSlotController {
+public class PatientTimeSlotController implements PatientTimeSlotDocs {
 
     private final TimeSlotService timeSlotService;
 
-    /**
-     * 예약 가능한 시간대 조회
-     * 
-     * @param hospitalId 병원 ID
-     * @param departmentName 진료과명
-     * @param date 조회할 날짜
-     * @return 시간대별 예약 가능 여부
-     */
+    @Override
     @GetMapping
     public ApiResponseTemplate<AvailableTimeSlotsResponse> getAvailableTimeSlots(
             @RequestParam Long hospitalId,
@@ -47,15 +41,7 @@ public class PatientTimeSlotController {
                 .body(response);
     }
 
-    /**
-     * 특정 시간의 예약 가능 여부 확인
-     * 
-     * @param hospitalId 병원 ID
-     * @param departmentName 진료과명
-     * @param date 날짜
-     * @param time 시간
-     * @return 예약 가능 여부
-     */
+    @Override
     @GetMapping("/check")
     public ApiResponseTemplate<Boolean> checkTimeSlotAvailable(
             @RequestParam Long hospitalId,

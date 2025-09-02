@@ -58,7 +58,7 @@ public class NotificationController implements NotificationDocs {
     @PostMapping("/call")
     public ApiResponseTemplate<String> callPatient(@Valid @RequestBody PatientCallRequest request) {
         try {
-            appointmentService.callPatient(request.getAppointmentId(), request.getRoomNumber());
+            appointmentService.callPatient(request.getAppointmentId());
 
             return ApiResponseTemplate.ok()
                     .body("SUCCESS");

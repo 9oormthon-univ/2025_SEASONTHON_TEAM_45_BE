@@ -70,12 +70,12 @@ public class Appointment extends BaseTimeEntity {
         this.hospitalDepartment = hospitalDepartment;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
-        this.status = AppointmentStatus.BOOKED; // 초기 상태는 예약 완료
+        this.status = AppointmentStatus.WAITING_BEFORE_ARRIVAL; // 초기 상태는 내원전
     }
 
     /**
      * 예약 생성 정적 팩토리 메서드
-     * 새로운 예약을 생성하며, 초기 상태는 BOOKED로 설정됩니다.
+     * 새로운 예약을 생성하며, 초기 상태는 WAITING_BEFORE_ARRIVAL로 설정됩니다.
      * 
      * @param member 예약한 환자
      * @param hospitalDepartment 예약 진료과
@@ -108,6 +108,14 @@ public class Appointment extends BaseTimeEntity {
      */
     public void checkin() {
         this.status = AppointmentStatus.ARRIVED;
+    }
+
+    /**
+     * 내원 시작 처리 (예약 시간이 다가왔을 때)
+     * 예약 상태를 WAITING_BEFORE_ARRIVAL에서 BOOKED로 변경합니다.
+     */
+    public void startWaiting() {
+        this.status = AppointmentStatus.BOOKED;
     }
 
     /**

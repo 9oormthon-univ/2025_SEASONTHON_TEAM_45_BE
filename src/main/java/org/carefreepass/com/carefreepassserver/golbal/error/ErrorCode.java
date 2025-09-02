@@ -42,6 +42,7 @@ public enum ErrorCode {
     APPOINTMENT_CANNOT_MODIFY_COMPLETED(HttpStatus.BAD_REQUEST, "APPOINTMENT_COMPLETED", "완료된 예약은 수정할 수 없습니다."),
     APPOINTMENT_CANNOT_MODIFY_CANCELLED(HttpStatus.BAD_REQUEST, "APPOINTMENT_CANCELLED", "취소된 예약은 수정할 수 없습니다."),
     APPOINTMENT_CANNOT_CANCEL_STARTED(HttpStatus.BAD_REQUEST, "APPOINTMENT_ALREADY_STARTED", "진료가 시작된 예약은 취소할 수 없습니다."),
+    APPOINTMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "APPOINTMENT_INVALID_STATUS", "현재 예약 상태에서는 해당 작업을 수행할 수 없습니다."),
     
     // 환자 호출 관련
     APPOINTMENT_CALL_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "CALL_NOT_AVAILABLE", "현재 호출할 수 없는 상태입니다. 잠시 후 다시 시도해주세요."),

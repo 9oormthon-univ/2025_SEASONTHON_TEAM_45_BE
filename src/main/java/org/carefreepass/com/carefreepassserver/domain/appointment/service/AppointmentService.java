@@ -65,19 +65,30 @@ public class AppointmentService {
                 .findByHospitalAndNameAndActiveTrue(hospital, request.getDepartmentName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
 
-        // 1. 환자별 중복 예약 검증 (같은 날짜에 예약된 상태인 예약이 있는지 확인)
-        if (appointmentRepository.existsByMemberIdAndAppointmentDateAndStatus(
-                request.getMemberId(), request.getAppointmentDate(), AppointmentStatus.BOOKED)) {
-            throw new BusinessException(ErrorCode.APPOINTMENT_DUPLICATE_DATE);
+        // 1. 환자별 중복 예약 검증 (같은 날짜에 활성 상태인 예약이 있는지 확인)
+        List<AppointmentStatus> activeStatuses = Arrays.asList(
+                AppointmentStatus.WAITING_BEFORE_ARRIVAL,
+                AppointmentStatus.BOOKED,
+                AppointmentStatus.ARRIVED,
+                AppointmentStatus.CALLED
+        );
+        
+        for (AppointmentStatus status : activeStatuses) {
+            if (appointmentRepository.existsByMemberIdAndAppointmentDateAndStatus(
+                    request.getMemberId(), request.getAppointmentDate(), status)) {
+                throw new BusinessException(ErrorCode.APPOINTMENT_DUPLICATE_DATE);
+            }
         }
 
-        // 2. 진료과별 시간 충돌 검사 (같은 진료과, 같은 시간에 예약이 있는지 확인)
-        if (appointmentRepository.existsByHospitalDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
-                department, request.getAppointmentDate(), request.getAppointmentTime(), AppointmentStatus.BOOKED)) {
-            throw new BusinessException(ErrorCode.APPOINTMENT_TIME_UNAVAILABLE);
+        // 2. 진료과별 시간 충돌 검사 (같은 진료과, 같은 시간에 활성 예약이 있는지 확인)
+        for (AppointmentStatus status : activeStatuses) {
+            if (appointmentRepository.existsByHospitalDepartmentAndAppointmentDateAndAppointmentTimeAndStatus(
+                    department, request.getAppointmentDate(), request.getAppointmentTime(), status)) {
+                throw new BusinessException(ErrorCode.APPOINTMENT_TIME_UNAVAILABLE);
+            }
         }
 
-        // 예약 엔티티 생성 (초기 상태: BOOKED)
+        // 예약 엔티티 생성 (초기 상태: WAITING_BEFORE_ARRIVAL)
         Appointment appointment = Appointment.createAppointment(
                 member, department, request.getAppointmentDate(), request.getAppointmentTime()
         );
@@ -129,6 +140,7 @@ public class AppointmentService {
     public List<Appointment> getTodayWaitingPatients() {
         List<AppointmentStatus> waitingStatuses = Arrays.asList(
                 AppointmentStatus.BOOKED,
+                AppointmentStatus.WAITING_BEFORE_ARRIVAL,
                 AppointmentStatus.ARRIVED
         );
 
@@ -183,16 +195,15 @@ public class AppointmentService {
 
     /**
      * 환자를 호출합니다. (핵심 기능)
-//     * FCM을 통해 환자에게 진료실 호출 알림을 전송하고, 성공 시 예약 상태를 CALLED로 변경합니다.
+     * FCM을 통해 환자에게 진료실 호출 알림을 전송하고, 성공 시 예약 상태를 CALLED로 변경합니다.
      * 
      * @param appointmentId 예약 ID
-     * @param customRoomNumber 사용자 지정 진료실 번호 (null인 경우 예약의 기본 진료실 사용)
      * @throws BusinessException 존재하지 않는 예약인 경우 (APPOINTMENT_NOT_FOUND)
      * @throws BusinessException 호출 불가능한 상태인 경우 (APPOINTMENT_CALL_NOT_AVAILABLE)
      * @throws RuntimeException 푸시 알림 전송 실패인 경우
      */
     @Transactional
-    public void callPatient(Long appointmentId, String customRoomNumber) {
+    public void callPatient(Long appointmentId) {
         // 예약 조회
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
@@ -202,8 +213,8 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.APPOINTMENT_CALL_NOT_AVAILABLE);
         }
 
-        // 진료실 번호는 단순히 사용자 지정이거나 기본값 사용
-        String roomNumber = customRoomNumber != null ? customRoomNumber : "진료실";
+        // 기본 진료실 번호 사용
+        String roomNumber = "진료실";
         
         // FCM 푸시 알림 전송 시도
         boolean success = notificationService.sendPatientCall(
@@ -229,6 +240,23 @@ public class AppointmentService {
     public Appointment getAppointment(Long appointmentId) {
         return appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
+    }
+
+    /**
+     * 예약 상태를 내원 대기로 변경 (예약 시간 30분 전 등에 호출)
+     * WAITING_BEFORE_ARRIVAL → BOOKED
+     */
+    @Transactional
+    public void startWaitingForAppointment(Long appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
+        
+        if (appointment.getStatus() != AppointmentStatus.WAITING_BEFORE_ARRIVAL) {
+            throw new BusinessException(ErrorCode.APPOINTMENT_INVALID_STATUS);
+        }
+        
+        appointment.startWaiting();
+        log.info("예약 대기 상태 변경: {} (예약 ID: {})", appointment.getMember().getName(), appointmentId);
     }
 
 }
