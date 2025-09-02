@@ -112,4 +112,30 @@ public class AppointmentController implements AppointmentDocs {
                 .body("SUCCESS");
     }
 
+    // 환자용 예약 조회 API 추가
+    @GetMapping("/my")
+    public ApiResponseTemplate<List<AppointmentResponse>> getMyAppointments(@RequestParam Long memberId) {
+        List<Appointment> appointments = appointmentService.getAppointmentsByMemberId(memberId);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4008")
+                .message("내 예약 목록 조회가 완료되었습니다.")
+                .body(responses);
+    }
+
+    // 오늘 내 예약 조회 API 추가
+    @GetMapping("/my/today")
+    public ApiResponseTemplate<List<AppointmentResponse>> getMyTodayAppointments(@RequestParam Long memberId) {
+        List<Appointment> appointments = appointmentService.getTodayAppointmentsByMemberId(memberId);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4009")
+                .message("오늘 내 예약 조회가 완료되었습니다.")
+                .body(responses);
+    }
+
 }
