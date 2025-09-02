@@ -37,191 +37,105 @@ public class AppointmentController implements AppointmentDocs {
     @Override
     @PostMapping
     public ApiResponseTemplate<Long> createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
-        try {
-            Long appointmentId = appointmentService.createAppointment(request);
-
-            return ApiResponseTemplate.ok()
-                    .body(appointmentId);
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to create appointment", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5001")
-                    .message("예약 생성에 실패했습니다.")
-                    .build();
-        }
+        Long appointmentId = appointmentService.createAppointment(request);
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4001")
+                .message("예약이 성공적으로 생성되었습니다.")
+                .body(appointmentId);
     }
 
     @Override
     @PutMapping("/checkin")
     public ApiResponseTemplate<String> checkinAppointment(@Valid @RequestBody AppointmentCheckinRequest request) {
-        try {
-            appointmentService.checkinAppointment(request.getAppointmentId(), request.getMemberId());
-
-            return ApiResponseTemplate.ok()
-                    .body("SUCCESS");
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to checkin appointment", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5002")
-                    .message("체크인에 실패했습니다.")
-                    .build();
-        }
+        appointmentService.checkinAppointment(request.getAppointmentId(), request.getMemberId());
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4002")
+                .message("체크인이 성공적으로 완료되었습니다.")
+                .body("SUCCESS");
     }
 
     @Override
     @GetMapping("/today/waiting")
     public ApiResponseTemplate<List<AppointmentResponse>> getTodayWaitingPatients() {
-        try {
-            List<Appointment> appointments = appointmentService.getTodayWaitingPatients();
-            List<AppointmentResponse> responses = appointments.stream()
-                    .map(AppointmentResponse::from)
-                    .toList();
-
-            return ApiResponseTemplate.ok()
-                    .body(responses);
-
-        } catch (Exception e) {
-            log.error("Failed to get today waiting patients", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5003")
-                    .message("대기 환자 목록 조회에 실패했습니다.")
-                    .build();
-        }
+        List<Appointment> appointments = appointmentService.getTodayWaitingPatients();
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4003")
+                .message("오늘 대기 환자 목록 조회가 완료되었습니다.")
+                .body(responses);
     }
 
     @Override
     @GetMapping("/today")
     public ApiResponseTemplate<List<AppointmentResponse>> getAllTodayAppointments() {
-        try {
-            List<Appointment> appointments = appointmentService.getAllTodayAppointments();
-            List<AppointmentResponse> responses = appointments.stream()
-                    .map(AppointmentResponse::from)
-                    .toList();
-
-            return ApiResponseTemplate.ok()
-                    .body(responses);
-
-        } catch (Exception e) {
-            log.error("Failed to get today appointments", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5004")
-                    .message("예약 목록 조회에 실패했습니다.")
-                    .build();
-        }
+        List<Appointment> appointments = appointmentService.getAllTodayAppointments();
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4004")
+                .message("오늘 예약 목록 조회가 완료되었습니다.")
+                .body(responses);
     }
 
     @Override
     @DeleteMapping("/{appointmentId}")
     public ApiResponseTemplate<String> deleteAppointment(@PathVariable Long appointmentId) {
-        try {
-            appointmentService.deleteAppointment(appointmentId);
-            
-            return ApiResponseTemplate.ok()
-                    .body("SUCCESS");
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Failed to delete appointment", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5005")
-                    .message("예약 삭제에 실패했습니다.")
-                    .build();
-        }
+        appointmentService.deleteAppointment(appointmentId);
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4005")
+                .message("예약이 성공적으로 삭제되었습니다.")
+                .body("SUCCESS");
     }
 
     @Override
     @PutMapping("/{appointmentId}/status/{status}")
     public ApiResponseTemplate<String> updateAppointmentStatus(@PathVariable Long appointmentId, @PathVariable String status) {
-        try {
-            AppointmentStatus appointmentStatus = AppointmentStatus.valueOf(status.toUpperCase());
-            appointmentService.updateAppointmentStatus(appointmentId, appointmentStatus);
-
-            return ApiResponseTemplate.ok()
-                    .body("SUCCESS");
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_4004")
-                    .message("잘못된 상태값입니다: " + status)
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to update appointment status", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5006")
-                    .message("예약 상태 변경에 실패했습니다.")
-                    .build();
-        }
+        AppointmentStatus appointmentStatus = AppointmentStatus.valueOf(status.toUpperCase());
+        appointmentService.updateAppointmentStatus(appointmentId, appointmentStatus);
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4006")
+                .message("예약 상태가 성공적으로 변경되었습니다.")
+                .body("SUCCESS");
     }
 
     @Override
     @PutMapping("/{appointmentId}")
     public ApiResponseTemplate<String> updateAppointment(@PathVariable Long appointmentId, 
                                                        @Valid @RequestBody AppointmentUpdateRequest request) {
-        try {
-            appointmentService.updateAppointment(appointmentId, request);
-
-            return ApiResponseTemplate.ok()
-                    .body("SUCCESS");
-
-        } catch (BusinessException e) {
-            return ApiResponseTemplate.error()
-                    .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to update appointment", e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5007")
-                    .message("예약 수정에 실패했습니다.")
-                    .build();
-        }
+        appointmentService.updateAppointment(appointmentId, request);
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4007")
+                .message("예약이 성공적으로 수정되었습니다.")
+                .body("SUCCESS");
     }
 
-    /**
-     * 진료과별 예약 가능 시간을 조회합니다.
-     * 
-     * @param department 진료과
-     * @param date 예약 날짜 (yyyy-MM-dd 형식)
-     * @return 예약 가능한 시간 목록
-     */
-    @GetMapping("/available-times/department")
-    public ApiResponseTemplate<List<LocalTime>> getAvailableTimesByDepartment(
-            @RequestParam String department,
-            @RequestParam LocalDate date) {
-        try {
-            List<LocalTime> availableTimes = appointmentService.getAvailableTimesByDepartment(department, date);
-            
-            return ApiResponseTemplate.ok()
-                    .body(availableTimes);
-
-        } catch (Exception e) {
-            log.error("Failed to get available times by department: {} for date: {}", department, date, e);
-            return ApiResponseTemplate.error()
-                    .code("APPOINTMENT_5008")
-                    .message("진료과별 예약 가능 시간 조회에 실패했습니다.")
-                    .build();
-        }
+    // 환자용 예약 조회 API 추가
+    @GetMapping("/my")
+    public ApiResponseTemplate<List<AppointmentResponse>> getMyAppointments(@RequestParam Long memberId) {
+        List<Appointment> appointments = appointmentService.getAppointmentsByMemberId(memberId);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4008")
+                .message("내 예약 목록 조회가 완료되었습니다.")
+                .body(responses);
     }
+
+    // 오늘 내 예약 조회 API 추가
+    @GetMapping("/my/today")
+    public ApiResponseTemplate<List<AppointmentResponse>> getMyTodayAppointments(@RequestParam Long memberId) {
+        List<Appointment> appointments = appointmentService.getTodayAppointmentsByMemberId(memberId);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4009")
+                .message("오늘 내 예약 조회가 완료되었습니다.")
+                .body(responses);
+    }
+
 }

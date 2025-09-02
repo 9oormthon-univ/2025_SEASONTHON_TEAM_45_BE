@@ -24,6 +24,8 @@ public class OpenAIService {
 
     public String generateResponse(List<org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage> conversationHistory, String userMessage) {
         try {
+            log.info("OpenAI API 호출 시작: 사용자 메시지 = {}", userMessage);
+            
             List<ChatMessage> messages = new ArrayList<>();
             
             // 시스템 프롬프트 추가
@@ -38,6 +40,8 @@ public class OpenAIService {
             
             // 현재 사용자 메시지 추가
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMessage));
+            
+            log.info("OpenAI API 요청 준비 완료: 메시지 수 = {}", messages.size());
             
             // ChatGPT API 호출
             ChatCompletionRequest request = ChatCompletionRequest.builder()
@@ -56,7 +60,9 @@ public class OpenAIService {
             
         } catch (Exception e) {
             log.error("OpenAI API 호출 실패: {}", e.getMessage(), e);
-            return generateFallbackResponse(userMessage);
+            String fallbackResponse = generateFallbackResponse(userMessage);
+            log.info("Fallback 응답 반환: {}", fallbackResponse);
+            return fallbackResponse;
         }
     }
 

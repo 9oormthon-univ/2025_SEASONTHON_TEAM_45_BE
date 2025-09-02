@@ -45,6 +45,7 @@ public enum ErrorCode {
     APPOINTMENT_CANNOT_MODIFY_COMPLETED(HttpStatus.BAD_REQUEST, "APPOINTMENT_COMPLETED", "완료된 예약은 수정할 수 없습니다."),
     APPOINTMENT_CANNOT_MODIFY_CANCELLED(HttpStatus.BAD_REQUEST, "APPOINTMENT_CANCELLED", "취소된 예약은 수정할 수 없습니다."),
     APPOINTMENT_CANNOT_CANCEL_STARTED(HttpStatus.BAD_REQUEST, "APPOINTMENT_ALREADY_STARTED", "진료가 시작된 예약은 취소할 수 없습니다."),
+    APPOINTMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "APPOINTMENT_INVALID_STATUS", "현재 예약 상태에서는 해당 작업을 수행할 수 없습니다."),
     
     // 환자 호출 관련
     APPOINTMENT_CALL_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "CALL_NOT_AVAILABLE", "현재 호출할 수 없는 상태입니다. 잠시 후 다시 시도해주세요."),
@@ -106,6 +107,19 @@ public enum ErrorCode {
     // 외부 API 관련
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "EXTERNAL_API_ERROR", "외부 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."),
     OPENAI_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OPENAI_API_ERROR", "AI 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."),
+    
+    // ========== 병원/진료과 관련 ==========
+    // 병원 관련
+    HOSPITAL_NOT_FOUND(HttpStatus.NOT_FOUND, "HOSPITAL_NOT_FOUND", "병원 정보를 찾을 수 없습니다."),
+    
+    // 진료과 관련
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "DEPARTMENT_NOT_FOUND", "진료과를 찾을 수 없습니다."),
+    DEPARTMENT_DUPLICATE_NAME(HttpStatus.CONFLICT, "DEPARTMENT_DUPLICATE_NAME", "이미 존재하는 진료과명입니다."),
+    DEPARTMENT_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "DEPARTMENT_NOT_ACTIVE", "운영하지 않는 진료과입니다."),
+    
+    // 시간 차단 관련
+    TIME_SLOT_ALREADY_BLOCKED(HttpStatus.CONFLICT, "TIME_SLOT_ALREADY_BLOCKED", "이미 차단된 시간대입니다."),
+    TIME_SLOT_EXCEPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "TIME_SLOT_EXCEPTION_NOT_FOUND", "시간 차단 정보를 찾을 수 없습니다."),
     ;
 
     private final HttpStatus httpStatus;

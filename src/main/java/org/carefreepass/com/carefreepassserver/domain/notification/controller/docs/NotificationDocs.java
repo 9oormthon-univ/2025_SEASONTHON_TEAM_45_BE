@@ -28,7 +28,7 @@ public interface NotificationDocs {
 
     @Operation(
             summary = "환자 호출",
-            description = "웹 관리자가 도착한 환자를 호출합니다. (핵심 기능)",
+            description = "웹 관리자가 도착한 환자를 호출합니다. 진료실 번호는 자동으로 '진료실'로 설정됩니다. (핵심 기능)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "호출 성공"),
                     @ApiResponse(responseCode = "400", description = "호출 불가능한 상태"),

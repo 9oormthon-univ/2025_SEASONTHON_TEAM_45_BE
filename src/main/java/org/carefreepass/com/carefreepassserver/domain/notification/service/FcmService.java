@@ -65,7 +65,7 @@ public class FcmService {
             return true;
 
         } catch (FirebaseMessagingException e) {
-            log.error("Failed to send FCM message to token: {}", fcmToken, e);
+            log.error("FCM 메시지 전송 실패, 토큰: {}", fcmToken, e);
 
             // 유효하지 않은 토큰 감지
             if ("INVALID_ARGUMENT".equals(e.getErrorCode()) ||
@@ -126,6 +126,31 @@ public class FcmService {
         data.put("patient_name", patientName);
         data.put("hospital_name", hospitalName);
         data.put("appointment_date", appointmentDate);
+        data.put("appointment_time", appointmentTime);
+
+        return sendNotification(fcmToken, title, body, data);
+    }
+
+    /**
+     * 내원 준비 알림을 전송합니다.
+     * 예약 시간 전 환자에게 병원 출발 안내를 보냅니다.
+     * 
+     * @param fcmToken 환자의 FCM 토큰
+     * @param patientName 환자 이름
+     * @param hospitalName 병원명
+     * @param appointmentTime 예약 시간
+     * @return 전송 성공 여부
+     */
+    public boolean sendPreArrivalNotification(String fcmToken, String patientName, String hospitalName, String appointmentTime) {
+        // 알림 메시지 구성
+        String title = "내원 안내";
+        String body = String.format("%s님, %s 진료 시간이 30분 후입니다. 병원으로 출발하세요.", patientName, appointmentTime);
+
+        // 추가 데이터 구성 (앱에서 추가 처리용)
+        Map<String, String> data = new HashMap<>();
+        data.put("type", "PRE_ARRIVAL_REMINDER");
+        data.put("patient_name", patientName);
+        data.put("hospital_name", hospitalName);
         data.put("appointment_time", appointmentTime);
 
         return sendNotification(fcmToken, title, body, data);

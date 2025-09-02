@@ -46,7 +46,7 @@ public class PatientAuthService {
                 Gender.from(request.gender()));
         patientProfileRepository.save(patientProfile);
 
-        return jwtTokenProvider.generateTokenPair(member.getId(), member.getRole());
+        return jwtTokenProvider.generateTokenPair(member.getId(), member.getName(), member.getRole());
     }
 
     public TokenPairResponse patientSignInWithLocal(PatientSignInRequest request) {
@@ -57,6 +57,6 @@ public class PatientAuthService {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
 
-        return jwtTokenProvider.generateTokenPair(member.getId(), member.getRole());
+        return jwtTokenProvider.generateTokenPair(member.getId(), member.getName(), member.getRole());
     }
 }
