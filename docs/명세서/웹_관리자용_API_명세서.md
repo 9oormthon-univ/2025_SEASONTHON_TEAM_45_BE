@@ -174,8 +174,6 @@ Authorization: Bearer <hospital_admin_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "SUCCESS",
-  "message": "환자 호출이 성공했습니다.",
   "data": "SUCCESS"
 }
 ```
@@ -447,8 +445,6 @@ Authorization: Bearer <hospital_admin_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "SUCCESS",
-  "message": "알림 이력 조회가 완료되었습니다.",
   "data": [
     {
       "id": 1,
