@@ -13,7 +13,10 @@ import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TokenPai
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.RefreshToken;
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.TemporaryMember;
 import org.carefreepass.com.carefreepassserver.domain.auth.repository.RefreshTokenRepository;
+import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.member.entity.PatientProfile;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.Hospital;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.carefreepass.com.carefreepassserver.golbal.util.JwtUtil;
@@ -38,8 +41,31 @@ public class JwtTokenProvider {
         String accessToken = generateAccessToken(memberId, memberRole);
         String refreshToken = generateAndSaveRefreshToken(memberId);
 
-        return TokenPairResponse.of(accessToken, refreshToken, memberId, memberName, memberRole.name());
+        return TokenPairResponse.of(accessToken, refreshToken, memberId, memberName, memberRole.getValue());
     }
+
+    public TokenPairResponse generateFullTokenPair(Member member, PatientProfile patientProfile, Hospital hospital) {
+        String accessToken = generateAccessToken(member.getId(), member.getRole());
+        String refreshToken = generateAndSaveRefreshToken(member.getId());
+
+        return TokenPairResponse.of(
+                accessToken, 
+                refreshToken,
+                member.getId(),
+                member.getName(),
+                member.getRole().getValue(),
+                member.getPhoneNumber(),
+                member.getEmail(),
+                member.getStatus().name(),
+                patientProfile != null ? patientProfile.getBirthDate() : null,
+                patientProfile != null && patientProfile.getGender() != null ? patientProfile.getGender().getValue() : null,
+                hospital != null ? hospital.getName() : null,
+                hospital != null ? hospital.getAddress() : null,
+                member.getCreatedAt(),
+                member.getUpdatedAt()
+        );
+    }
+
 
     public String generateAccessToken(Long memberId, MemberRole memberRole) {
         return jwtUtil.generateAccessToken(memberId, memberRole);

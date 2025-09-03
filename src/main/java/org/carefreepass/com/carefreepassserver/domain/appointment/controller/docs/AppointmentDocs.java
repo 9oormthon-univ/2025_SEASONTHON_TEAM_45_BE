@@ -72,7 +72,7 @@ public interface AppointmentDocs {
     
     @Operation(
             summary = "예약 상태 변경 (관리자 전용)",
-            description = "예약의 상태를 변경합니다. (WAITING_BEFORE_ARRIVAL→BOOKED→ARRIVED→CALLED→COMPLETED 또는 CANCELLED)",
+            description = "예약의 상태를 변경합니다. (WAITING→BOOKED→ARRIVED→CALLED→COMPLETED 또는 CANCELLED)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "상태 변경 성공"),
                     @ApiResponse(responseCode = "400", description = "잘못된 상태값"),

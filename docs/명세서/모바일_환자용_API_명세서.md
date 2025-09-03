@@ -127,7 +127,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "CHAT_SUCCESS",
+  "code": "CHAT_6001",
   "message": "채팅 세션이 시작되었습니다.",
   "data": {
     "sessionId": 456,
@@ -181,7 +181,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "CHAT_MESSAGE_SENT",
+  "code": "CHAT_6002",
   "message": "메시지가 전송되었습니다.", 
   "data": {
     "messageId": 791,
@@ -214,7 +214,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "CHAT_SESSIONS_FOUND",
+  "code": "CHAT_6003",
   "message": "채팅 세션 목록 조회가 완료되었습니다.",
   "data": [
     {
@@ -249,6 +249,22 @@ Authorization: Bearer <patient_token>
 **🔍 Query Parameters:**
 - `memberId`: 환자 ID (필수)
 
+**✅ Response (200 OK):**
+```json
+{
+  "code": "CHAT_6004",
+  "message": "채팅 세션 상세 조회가 완료되었습니다.",
+  "data": {
+    "sessionId": 456,
+    "memberId": 1,
+    "status": "ACTIVE",
+    "messages": [
+      // 전체 메시지 목록...
+    ]
+  }
+}
+```
+
 ### 2.5 채팅 세션 완료 ✅
 ```http
 PUT /api/v1/chat/sessions/{sessionId}/complete?memberId=1
@@ -260,7 +276,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "CHAT_SESSION_COMPLETED",
+  "code": "CHAT_6005",
   "message": "채팅 세션이 완료되었습니다.",
   "data": "SUCCESS"
 }
@@ -490,7 +506,7 @@ GET /api/v1/appointments/my?memberId=1&date=2025-09-03
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "APPOINTMENT_SUCCESS",
+  "code": "APPOINTMENT_4008",
   "message": "내 예약 목록 조회가 완료되었습니다.",
   "data": [
     {
@@ -538,7 +554,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "APPOINTMENT_TODAY_SUCCESS",
+  "code": "APPOINTMENT_4009",
   "message": "오늘 내 예약 조회가 완료되었습니다.",
   "data": [
     {
@@ -578,7 +594,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "APPOINTMENT_DETAIL_SUCCESS",
+  "code": "APPOINTMENT_4010",
   "message": "예약 상세 조회가 완료되었습니다.",
   "data": {
     "appointmentId": 123,
@@ -620,7 +636,7 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "APPOINTMENT_STATISTICS_SUCCESS", 
+  "code": "APPOINTMENT_4011", 
   "message": "내 예약 통계 조회가 완료되었습니다.",
   "data": {
     "totalAppointments": 15,      // 총 예약 횟수
@@ -664,8 +680,6 @@ Authorization: Bearer <patient_token>
 **✅ Response (200 OK):**
 ```json
 {
-  "code": "FCM_TOKEN_REGISTERED",
-  "message": "FCM 토큰이 성공적으로 등록되었습니다.",
   "data": "SUCCESS"
 }
 ```
