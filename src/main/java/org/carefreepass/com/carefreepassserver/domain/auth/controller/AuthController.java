@@ -88,7 +88,7 @@ public class AuthController implements AuthDocs {
     }
 
     @PostMapping("hospital/sign-in")
-    public ApiResponseTemplate<TokenPairResponse> hospitalSignInWithLocal(@RequestBody HospitalSignInRequest request) {
+    public ApiResponseTemplate<TokenPairResponse> hospitalSignInWithLocal(@Valid @RequestBody HospitalSignInRequest request) {
         TokenPairResponse response = authService.hospitalSignInWithLocal(request);
 
         return ApiResponseTemplate.ok()

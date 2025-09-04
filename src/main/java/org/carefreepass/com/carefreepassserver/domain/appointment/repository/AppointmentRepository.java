@@ -93,4 +93,16 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
      */
     @Query("SELECT a FROM Appointment a JOIN FETCH a.member m JOIN FETCH a.hospitalDepartment hd JOIN FETCH hd.hospital WHERE m.id = :memberId AND a.appointmentDate = :date ORDER BY a.appointmentTime")
     List<Appointment> findByMemberIdAndAppointmentDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
+
+    /**
+     * 병원 진료과의 특정 날짜 활성 예약 목록 조회 (여러 상태)
+     * 시간대별 예약 가능 여부를 확인할 때 사용됩니다.
+     * 
+     * @param hospitalDepartment 병원 진료과
+     * @param date 조회할 날짜
+     * @param statuses 조회할 예약 상태 목록
+     * @return 예약 목록 (회원 정보 포함)
+     */
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.member WHERE a.hospitalDepartment = :department AND a.appointmentDate = :date AND a.status IN :statuses ORDER BY a.appointmentTime")
+    List<Appointment> findByHospitalDepartmentAndAppointmentDateAndStatusIn(@Param("department") HospitalDepartment hospitalDepartment, @Param("date") LocalDate date, @Param("statuses") List<AppointmentStatus> statuses);
 }

@@ -124,8 +124,16 @@ public class TimeSlotService {
      * @return 시간별 예약자명 Map
      */
     private Map<LocalTime, String> getBookedTimes(HospitalDepartment department, LocalDate date) {
+        // 모든 활성 상태의 예약 조회 (CANCELLED와 COMPLETED 제외)
+        List<AppointmentStatus> activeStatuses = List.of(
+            AppointmentStatus.WAITING,
+            AppointmentStatus.SCHEDULED,
+            AppointmentStatus.ARRIVED,
+            AppointmentStatus.CALLED
+        );
+
         List<Appointment> appointments = appointmentRepository
-                .findByHospitalDepartmentAndDateAndStatus(department, date, AppointmentStatus.SCHEDULED);
+                .findByHospitalDepartmentAndAppointmentDateAndStatusIn(department, date, activeStatuses);
 
         return appointments.stream()
                 .collect(Collectors.toMap(

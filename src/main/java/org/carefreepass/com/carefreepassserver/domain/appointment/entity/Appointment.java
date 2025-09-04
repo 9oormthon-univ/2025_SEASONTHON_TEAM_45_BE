@@ -65,17 +65,19 @@ public class Appointment extends BaseTimeEntity {
      */
     @Builder(access = AccessLevel.PRIVATE)
     private Appointment(Member member, HospitalDepartment hospitalDepartment,
-                       LocalDate appointmentDate, LocalTime appointmentTime) {
+                       LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status) {
         this.member = member;
         this.hospitalDepartment = hospitalDepartment;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
-        this.status = AppointmentStatus.WAITING; // 초기 상태는 예약 확정
+        this.status = status;
     }
 
     /**
      * 예약 생성 정적 팩토리 메서드
-     * 새로운 예약을 생성하며, 초기 상태는 WAITING으로 설정됩니다.
+     * 새로운 예약을 생성하며, 날짜에 따라 초기 상태를 설정합니다.
+     * - 오늘 날짜: SCHEDULED (오늘 내원전)
+     * - 미래 날짜: WAITING (예약 확정)
      * 
      * @param member 예약한 환자
      * @param hospitalDepartment 예약 진료과
@@ -85,11 +87,17 @@ public class Appointment extends BaseTimeEntity {
      */
     public static Appointment createAppointment(Member member, HospitalDepartment hospitalDepartment,
                                               LocalDate appointmentDate, LocalTime appointmentTime) {
+        // 오늘 날짜면 SCHEDULED, 미래 날짜면 WAITING
+        AppointmentStatus initialStatus = appointmentDate.equals(LocalDate.now()) 
+                ? AppointmentStatus.SCHEDULED 
+                : AppointmentStatus.WAITING;
+                
         return Appointment.builder()
                 .member(member)
                 .hospitalDepartment(hospitalDepartment)
                 .appointmentDate(appointmentDate)
                 .appointmentTime(appointmentTime)
+                .status(initialStatus)
                 .build();
     }
 
