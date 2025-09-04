@@ -127,8 +127,9 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 체크인 가능한 상태인지 확인 (BOOKED 상태에서만 체크인 가능)
-        if (appointment.getStatus() != AppointmentStatus.BOOKED) {
+        // 체크인 가능한 상태인지 확인 (WAITING, BOOKED 상태에서 체크인 가능)
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED || 
+            appointment.getStatus() == AppointmentStatus.CANCELLED) {
             throw new BusinessException(ErrorCode.APPOINTMENT_CANNOT_MODIFY_COMPLETED);
         }
 
