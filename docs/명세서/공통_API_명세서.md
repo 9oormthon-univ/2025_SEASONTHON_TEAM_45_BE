@@ -134,8 +134,8 @@ Content-Type: application/json
 ```json
 {
   "code": "TEST_2002",
-  "message": "Echo 테스트가 완료되었습니다.",
-  "data": "Hello CareFreePass!"  // 입력한 메시지 그대로 반환
+  "message": "메시지 수신 완료",
+  "data": "Echo: Hello CareFreePass!"  // "Echo: " + 입력 메시지
 }
 ```
 

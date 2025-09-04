@@ -67,7 +67,7 @@ public class AppointmentService {
 
         // 1. 환자별 중복 예약 검증 (같은 날짜에 활성 상태인 예약이 있는지 확인)
         List<AppointmentStatus> activeStatuses = Arrays.asList(
-                AppointmentStatus.WAITING_BEFORE_ARRIVAL,
+                AppointmentStatus.WAITING,
                 AppointmentStatus.BOOKED,
                 AppointmentStatus.ARRIVED,
                 AppointmentStatus.CALLED
@@ -88,7 +88,7 @@ public class AppointmentService {
             }
         }
 
-        // 예약 엔티티 생성 (초기 상태: WAITING_BEFORE_ARRIVAL)
+        // 예약 엔티티 생성 (초기 상태: WAITING)
         Appointment appointment = Appointment.createAppointment(
                 member, department, request.getAppointmentDate(), request.getAppointmentTime()
         );
@@ -141,7 +141,7 @@ public class AppointmentService {
     public List<Appointment> getTodayWaitingPatients() {
         List<AppointmentStatus> waitingStatuses = Arrays.asList(
                 AppointmentStatus.BOOKED,
-                AppointmentStatus.WAITING_BEFORE_ARRIVAL,
+                AppointmentStatus.WAITING,
                 AppointmentStatus.ARRIVED
         );
 
@@ -265,14 +265,14 @@ public class AppointmentService {
 
     /**
      * 예약 상태를 내원 대기로 변경 (예약 시간 30분 전 등에 호출)
-     * WAITING_BEFORE_ARRIVAL → BOOKED
+     * WAITING → BOOKED
      */
     @Transactional
     public void startWaitingForAppointment(Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
         
-        if (appointment.getStatus() != AppointmentStatus.WAITING_BEFORE_ARRIVAL) {
+        if (appointment.getStatus() != AppointmentStatus.WAITING) {
             throw new BusinessException(ErrorCode.APPOINTMENT_INVALID_STATUS);
         }
         
