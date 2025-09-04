@@ -40,4 +40,11 @@ public interface HospitalDepartmentRepository extends JpaRepository<HospitalDepa
      */
     boolean existsByHospitalAndName(Hospital hospital, String name);
 
+    /**
+     * 모든 활성화된 진료과 조회 (전체 병원)
+     * 
+     * @return 모든 활성화된 진료과 목록
+     */
+    List<HospitalDepartment> findByActiveTrue();
+
 }

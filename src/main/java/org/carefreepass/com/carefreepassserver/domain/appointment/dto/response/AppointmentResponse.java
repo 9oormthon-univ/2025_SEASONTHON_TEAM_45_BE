@@ -20,6 +20,12 @@ public class AppointmentResponse {
     @Schema(description = "회원명", example = "김환자")
     private String memberName;
     
+    @Schema(description = "회원 전화번호", example = "010-1234-5678")
+    private String memberPhoneNumber;
+    
+    @Schema(description = "회원 생년월일", example = "1990-01-15")
+    private LocalDate memberBirthDate;
+    
     @Schema(description = "병원명", example = "서울대학교병원")
     private String hospitalName;
     
@@ -45,6 +51,8 @@ public class AppointmentResponse {
         return new AppointmentResponse(
                 appointment.getId(),
                 appointment.getMember().getName(),
+                appointment.getMember().getPhoneNumber(),
+                appointment.getMember().getBirthDate(),
                 appointment.getHospitalName(),
                 appointment.getDepartmentName(),
                 appointment.getAppointmentDate(),

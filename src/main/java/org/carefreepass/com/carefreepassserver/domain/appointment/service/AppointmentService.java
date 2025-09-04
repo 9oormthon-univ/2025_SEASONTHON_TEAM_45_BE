@@ -18,7 +18,6 @@ import org.carefreepass.com.carefreepassserver.domain.hospital.repository.Hospit
 import org.carefreepass.com.carefreepassserver.domain.hospital.repository.HospitalRepository;
 import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
 import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
-import org.carefreepass.com.carefreepassserver.domain.notification.service.NotificationService;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,6 @@ public class AppointmentService {
     private final MemberRepository memberRepository;
     private final HospitalRepository hospitalRepository;
     private final HospitalDepartmentRepository hospitalDepartmentRepository;
-    private final NotificationService notificationService;
 
     /**
      * 새로운 예약을 생성합니다.
@@ -68,7 +66,7 @@ public class AppointmentService {
         // 1. 환자별 중복 예약 검증 (같은 날짜에 활성 상태인 예약이 있는지 확인)
         List<AppointmentStatus> activeStatuses = Arrays.asList(
                 AppointmentStatus.WAITING,
-                AppointmentStatus.BOOKED,
+                AppointmentStatus.SCHEDULED,
                 AppointmentStatus.ARRIVED,
                 AppointmentStatus.CALLED
         );
@@ -96,12 +94,6 @@ public class AppointmentService {
         // 예약 저장
         Appointment savedAppointment = appointmentRepository.save(appointment);
 
-        // 예약 확인 알림 전송
-        notificationService.sendAppointmentConfirmation(
-                savedAppointment.getId(), request.getMemberId(), member.getName(), 
-                hospital.getName(), request.getAppointmentDate().toString(), request.getAppointmentTime().toString()
-        );
-
         log.info("예약 생성 완료: 회원 {} (ID: {}), 진료과: {}", 
                 member.getName(), request.getMemberId(), request.getDepartmentName());
         return savedAppointment.getId();
@@ -109,7 +101,7 @@ public class AppointmentService {
 
     /**
      * 환자 체크인을 처리합니다.
-     * BOOKED 상태의 예약을 ARRIVED 상태로 변경합니다.
+     * SCHEDULED 상태의 예약을 ARRIVED 상태로 변경합니다.
      * 
      * @param appointmentId 예약 ID
      * @param memberId 환자 ID
@@ -127,9 +119,8 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 체크인 가능한 상태인지 확인 (WAITING, BOOKED 상태에서 체크인 가능)
-        if (appointment.getStatus() == AppointmentStatus.COMPLETED || 
-            appointment.getStatus() == AppointmentStatus.CANCELLED) {
+        // 체크인 가능한 상태인지 확인 (SCHEDULED 상태에서만 체크인 가능)
+        if (appointment.getStatus() != AppointmentStatus.SCHEDULED) {
             throw new BusinessException(ErrorCode.APPOINTMENT_CANNOT_MODIFY_COMPLETED);
         }
 
@@ -140,9 +131,9 @@ public class AppointmentService {
 
     public List<Appointment> getTodayWaitingPatients() {
         List<AppointmentStatus> waitingStatuses = Arrays.asList(
-                AppointmentStatus.BOOKED,
-                AppointmentStatus.WAITING,
-                AppointmentStatus.ARRIVED
+                AppointmentStatus.SCHEDULED,
+                AppointmentStatus.ARRIVED,
+                AppointmentStatus.CALLED
         );
 
         return appointmentRepository.findTodayAppointmentsByStatus(LocalDate.now(), waitingStatuses);
@@ -195,13 +186,12 @@ public class AppointmentService {
     }
 
     /**
-     * 환자를 호출합니다. (핵심 기능)
-     * FCM을 통해 환자에게 진료실 호출 알림을 전송하고, 성공 시 예약 상태를 CALLED로 변경합니다.
+     * 환자를 호출합니다. (폴링 기반)
+     * 예약 상태를 CALLED로 변경하여 환자 앱에서 폴링으로 감지할 수 있도록 합니다.
      * 
      * @param appointmentId 예약 ID
      * @throws BusinessException 존재하지 않는 예약인 경우 (APPOINTMENT_NOT_FOUND)
      * @throws BusinessException 호출 불가능한 상태인 경우 (APPOINTMENT_CALL_NOT_AVAILABLE)
-     * @throws RuntimeException 푸시 알림 전송 실패인 경우
      */
     @Transactional
     public void callPatient(Long appointmentId) {
@@ -214,28 +204,10 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.APPOINTMENT_CALL_NOT_AVAILABLE);
         }
 
-        // 기본 진료실 번호 사용
-        String roomNumber = "진료실";
-        
-        // FCM 푸시 알림 전송 시도
-        boolean success = notificationService.sendPatientCall(
-                appointment.getMember().getId(), 
-                appointment.getMember().getName(), 
-                roomNumber,
-                appointment.getId()
-        );
-
-        if (success) {
-            // 알림 전송 성공 시 예약 상태를 CALLED로 변경
-            appointment.call();
-            log.info("Patient called successfully: {} (Appointment ID: {})", 
-                    appointment.getMember().getName(), appointmentId);
-        } else {
-            // 알림 전송 실패 시 예외 발생
-            log.error("Failed to call patient: {} (Appointment ID: {})", 
-                    appointment.getMember().getName(), appointmentId);
-            throw new RuntimeException("푸시 알림 전송에 실패했습니다.");
-        }
+        // 예약 상태를 CALLED로 변경 (폴링으로 감지됨)
+        appointment.call();
+        log.info("환자 호출 완료: {} (예약 ID: {})", 
+                appointment.getMember().getName(), appointmentId);
     }
 
     public Appointment getAppointment(Long appointmentId) {
@@ -265,7 +237,7 @@ public class AppointmentService {
 
     /**
      * 예약 상태를 내원 대기로 변경 (예약 시간 30분 전 등에 호출)
-     * WAITING → BOOKED
+     * WAITING → SCHEDULED
      */
     @Transactional
     public void startWaitingForAppointment(Long appointmentId) {
@@ -276,8 +248,42 @@ public class AppointmentService {
             throw new BusinessException(ErrorCode.APPOINTMENT_INVALID_STATUS);
         }
         
-        appointment.startWaiting();
+        appointment.scheduleForToday();
         log.info("예약 대기 상태 변경: {} (예약 ID: {})", appointment.getMember().getName(), appointmentId);
+    }
+
+    /**
+     * 특정 날짜의 모든 예약 조회 (관리자용)
+     * 
+     * @param date 조회할 날짜
+     * @return 해당 날짜의 모든 예약 목록
+     */
+    public List<Appointment> getAppointmentsByDate(LocalDate date) {
+        return appointmentRepository.findAllByAppointmentDate(date);
+    }
+
+    /**
+     * 오늘 날짜의 WAITING 상태 예약을 SCHEDULED로 변경 (스케줄러용)
+     * 
+     * @return 업데이트된 예약 개수
+     */
+    @Transactional
+    public int updateTodayWaitingToScheduled() {
+        LocalDate today = LocalDate.now();
+        List<Appointment> todayAppointments = appointmentRepository.findAllByAppointmentDate(today);
+        
+        int updatedCount = 0;
+        for (Appointment appointment : todayAppointments) {
+            if (appointment.getStatus() == AppointmentStatus.WAITING) {
+                appointment.updateStatus(AppointmentStatus.SCHEDULED);
+                updatedCount++;
+                log.info("예약 상태 변경: {} (ID: {}) - WAITING → SCHEDULED", 
+                        appointment.getMember().getName(), appointment.getId());
+            }
+        }
+        
+        log.info("오늘 날짜({}) 예약 상태 업데이트 완료 - 총 {}건", today, updatedCount);
+        return updatedCount;
     }
 
 }

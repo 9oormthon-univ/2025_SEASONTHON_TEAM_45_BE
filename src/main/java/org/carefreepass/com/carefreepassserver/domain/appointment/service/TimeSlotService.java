@@ -125,7 +125,7 @@ public class TimeSlotService {
      */
     private Map<LocalTime, String> getBookedTimes(HospitalDepartment department, LocalDate date) {
         List<Appointment> appointments = appointmentRepository
-                .findByHospitalDepartmentAndDateAndStatus(department, date, AppointmentStatus.BOOKED);
+                .findByHospitalDepartmentAndDateAndStatus(department, date, AppointmentStatus.SCHEDULED);
 
         return appointments.stream()
                 .collect(Collectors.toMap(

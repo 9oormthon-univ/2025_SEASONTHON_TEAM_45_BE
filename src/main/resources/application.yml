@@ -9,7 +9,6 @@ spring:
     include:
       - datasource
       - redis
-      - firebase
       - security
       - coolsms
 

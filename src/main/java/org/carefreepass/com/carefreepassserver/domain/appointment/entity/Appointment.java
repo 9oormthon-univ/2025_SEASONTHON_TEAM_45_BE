@@ -54,7 +54,7 @@ public class Appointment extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalTime appointmentTime;
 
-    /** 예약 상태 (BOOKED, ARRIVED, CALLED, COMPLETED, CANCELLED) */
+    /** 예약 상태 (WAITING, SCHEDULED, ARRIVED, CALLED, COMPLETED, CANCELLED) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AppointmentStatus status;
@@ -70,7 +70,7 @@ public class Appointment extends BaseTimeEntity {
         this.hospitalDepartment = hospitalDepartment;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
-        this.status = AppointmentStatus.WAITING; // 초기 상태는 내원전
+        this.status = AppointmentStatus.WAITING; // 초기 상태는 예약 확정
     }
 
     /**
@@ -111,11 +111,11 @@ public class Appointment extends BaseTimeEntity {
     }
 
     /**
-     * 내원 시작 처리 (예약 시간이 다가왔을 때)
-     * 예약 상태를 WAITING에서 BOOKED로 변경합니다.
+     * 오늘 내원 예정 상태로 변경 (오늘 날짜가 되었을 때)
+     * 예약 상태를 WAITING에서 SCHEDULED로 변경합니다.
      */
-    public void startWaiting() {
-        this.status = AppointmentStatus.BOOKED;
+    public void scheduleForToday() {
+        this.status = AppointmentStatus.SCHEDULED;
     }
 
     /**

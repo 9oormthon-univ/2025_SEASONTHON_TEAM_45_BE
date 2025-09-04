@@ -41,7 +41,7 @@ public interface AppointmentDocs {
     
     @Operation(
             summary = "오늘 대기 환자 조회 (관리자 전용)",
-            description = "오늘 날짜의 대기 중인 환자 목록을 조회합니다. (BOOKED, ARRIVED 상태)",
+            description = "오늘 날짜의 대기 중인 환자 목록을 조회합니다. (SCHEDULED, ARRIVED, CALLED 상태)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "대기 환자 목록 조회 성공"),
                     @ApiResponse(responseCode = "500", description = "서버 내부 오류")
@@ -72,7 +72,7 @@ public interface AppointmentDocs {
     
     @Operation(
             summary = "예약 상태 변경 (관리자 전용)",
-            description = "예약의 상태를 변경합니다. (WAITING→BOOKED→ARRIVED→CALLED→COMPLETED 또는 CANCELLED)",
+            description = "예약의 상태를 변경합니다. (WAITING→SCHEDULED→ARRIVED→CALLED→COMPLETED 또는 CANCELLED)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "상태 변경 성공"),
                     @ApiResponse(responseCode = "400", description = "잘못된 상태값"),

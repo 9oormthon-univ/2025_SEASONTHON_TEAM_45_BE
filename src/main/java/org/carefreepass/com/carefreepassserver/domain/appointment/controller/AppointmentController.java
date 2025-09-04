@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.carefreepass.com.carefreepassserver.domain.appointment.controller.docs.AppointmentDocs;
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentCheckinRequest;
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.AppointmentCreateRequest;
@@ -136,6 +137,53 @@ public class AppointmentController implements AppointmentDocs {
                 .code("APPOINTMENT_4009")
                 .message("오늘 내 예약 조회가 완료되었습니다.")
                 .body(responses);
+    }
+
+    // 관리자용 특정 날짜 예약 조회 API 추가
+    @GetMapping("/date")
+    public ApiResponseTemplate<List<AppointmentResponse>> getAppointmentsByDate(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        List<Appointment> appointments = appointmentService.getAppointmentsByDate(date);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4010")
+                .message("날짜별 예약 목록 조회가 완료되었습니다.")
+                .body(responses);
+    }
+
+    // 관리자용 환자 호출 API (폴링 기반)
+    @PutMapping("/{appointmentId}/call")
+    public ApiResponseTemplate<String> callPatient(@PathVariable Long appointmentId) {
+        appointmentService.callPatient(appointmentId);
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4011")
+                .message("환자 호출이 완료되었습니다.")
+                .body("SUCCESS");
+    }
+
+    // 환자용 상태 확인 API (폴링용)
+    @GetMapping("/my/status")
+    public ApiResponseTemplate<List<AppointmentResponse>> getMyAppointmentStatus(@RequestParam Long memberId) {
+        List<Appointment> appointments = appointmentService.getTodayAppointmentsByMemberId(memberId);
+        List<AppointmentResponse> responses = appointments.stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4012")
+                .message("내 예약 상태 조회가 완료되었습니다.")
+                .body(responses);
+    }
+
+    // 관리자용 예약 상태 수동 업데이트 API
+    @PutMapping("/update-today-status")
+    public ApiResponseTemplate<String> updateTodayAppointmentsStatus() {
+        int updatedCount = appointmentService.updateTodayWaitingToScheduled();
+        return ApiResponseTemplate.ok()
+                .code("APPOINTMENT_4013")
+                .message("오늘 예약 상태 업데이트가 완료되었습니다.")
+                .body("총 " + updatedCount + "건 업데이트됨");
     }
 
 }

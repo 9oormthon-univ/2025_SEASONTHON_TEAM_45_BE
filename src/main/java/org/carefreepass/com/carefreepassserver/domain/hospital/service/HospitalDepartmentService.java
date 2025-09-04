@@ -137,4 +137,13 @@ public class HospitalDepartmentService {
         return hospitalDepartmentRepository.findByHospitalAndNameAndActiveTrue(hospital, departmentName)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
     }
+
+    /**
+     * 모든 병원의 활성화된 진료과 조회 (환자용)
+     * 
+     * @return 모든 활성화된 진료과 목록
+     */
+    public List<HospitalDepartment> getAllActiveDepartments() {
+        return hospitalDepartmentRepository.findByActiveTrue();
+    }
 }
