@@ -3,11 +3,13 @@ package org.carefreepass.com.carefreepassserver.domain.appointment.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.appointment.entity.Appointment;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.PatientProfile;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -52,7 +54,36 @@ public class AppointmentResponse {
                 appointment.getId(),
                 appointment.getMember().getName(),
                 appointment.getMember().getPhoneNumber(),
-                appointment.getMember().getBirthDate(),
+                null, // birthDate는 PatientProfile이 필요하므로 null로 설정
+                appointment.getHospitalName(),
+                appointment.getDepartmentName(),
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime(),
+                appointment.getStatus().name(),
+                appointment.getStatus().getDescription(),
+                appointment.canCall()
+        );
+    }
+
+    public static AppointmentResponse from(Appointment appointment, PatientProfile patientProfile) {
+        LocalDate birthDate = null;
+        
+        // PatientProfile이 있고 birthDate가 있으면 변환 시도
+        if (patientProfile != null && patientProfile.getBirthDate() != null) {
+            try {
+                // birthDate가 문자열로 저장되어 있다면 LocalDate로 변환
+                birthDate = LocalDate.parse(patientProfile.getBirthDate(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (Exception e) {
+                // 파싱 실패 시 null로 설정 (로그는 생략)
+                birthDate = null;
+            }
+        }
+        
+        return new AppointmentResponse(
+                appointment.getId(),
+                appointment.getMember().getName(),
+                appointment.getMember().getPhoneNumber(),
+                birthDate,
                 appointment.getHospitalName(),
                 appointment.getDepartmentName(),
                 appointment.getAppointmentDate(),
