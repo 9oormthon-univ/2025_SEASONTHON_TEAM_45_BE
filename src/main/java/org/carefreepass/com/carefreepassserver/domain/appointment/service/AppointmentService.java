@@ -126,6 +126,10 @@ public class AppointmentService {
     public List<Appointment> getAllTodayAppointments() {
         return appointmentRepository.findAllByAppointmentDate(LocalDate.now());
     }
+    
+    public PatientProfile getPatientProfileByAppointment(Appointment appointment) {
+        return patientProfileRepository.findByMember(appointment.getMember()).orElse(null);
+    }
 
     @Transactional
     public void deleteAppointment(Long appointmentId) {
