@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환자 대기 현황</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        .status-card.called {
+            background: #fff3e0;
+            border-color: #ff9800;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        .status-text {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .department-info {
+            font-size: 1.8em;
+            color: #ff5722;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .call-message {
+            font-size: 1.5em;
+            color: #d32f2f;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background: #ffebee;
+            border-radius: 8px;
+            border: 2px solid #ef5350;
+        }
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .loading {
+            color: #666;
+            font-size: 1.1em;
+        }
+        .time-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 환자 대기 현황</h1>
+            <p>실시간 호출 알림</p>
+        </div>
+
+        <!-- 로그인 섹션 -->
+        <div id="loginSection">
+            <div class="form-group">
+                <label for="memberId">환자 ID</label>
+                <input type="number" id="memberId" placeholder="환자 ID를 입력하세요" required>
+            </div>
+            <button class="btn btn-primary" onclick="startMonitoring()">내 예약 확인하기</button>
+        </div>
+
+        <!-- 모니터링 섹션 -->
+        <div id="monitoringSection" style="display: none;">
+            <div class="patient-info">
+                <strong>환자:</strong> <span id="patientName">-</span><br>
+                <strong>진료과:</strong> <span id="department">-</span><br>
+                <strong>예약시간:</strong> <span id="appointmentTime">-</span>
+            </div>
+
+            <div id="statusCard" class="status-card">
+                <div class="status-text" id="statusText">대기 중</div>
+                <div id="callMessage" style="display: none;" class="call-message">
+                    🔔 <span id="departmentName">진료과</span> 진료실로 입장해주세요!
+                </div>
+            </div>
+
+            <div class="time-info">
+                마지막 업데이트: <span id="lastUpdate">-</span>
+            </div>
+
+            <button class="btn btn-success" onclick="stopMonitoring()">모니터링 중지</button>
+        </div>
+    </div>
+
+    <script>
+        let memberId = null;
+        let pollingInterval = null;
+        const API_BASE = 'http://localhost:8080/api/v1';
+
+        // 모니터링 시작
+        async function startMonitoring() {
+            const inputMemberId = document.getElementById('memberId').value.trim();
+            if (!inputMemberId) {
+                alert('환자 ID를 입력해주세요.');
+                return;
+            }
+
+            memberId = inputMemberId;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('monitoringSection').style.display = 'block';
+
+            // 즉시 한 번 실행 후 폴링 시작
+            await checkAppointmentStatus();
+            pollingInterval = setInterval(checkAppointmentStatus, 5000); // 5초마다 체크
+        }
+
+        // 모니터링 중지
+        function stopMonitoring() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            memberId = null;
+
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('monitoringSection').style.display = 'none';
+            document.getElementById('memberId').value = '';
+        }
+
+        // 예약 상태 확인
+        async function checkAppointmentStatus() {
+            if (!memberId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/appointments/today/member/${memberId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const appointments = data.body || [];
+                
+                if (appointments.length > 0) {
+                    const appointment = appointments[0]; // 첫 번째 예약
+                    updateStatus(appointment);
+                } else {
+                    updateStatus(null);
+                }
+
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ko-KR');
+
+            } catch (error) {
+                console.error('상태 확인 실패:', error);
+                document.getElementById('statusText').textContent = '상태 확인 실패';
+            }
+        }
+
+        // 상태 업데이트
+        function updateStatus(appointment) {
+            if (!appointment) {
+                document.getElementById('statusText').textContent = '예약 정보 없음';
+                document.getElementById('patientName').textContent = '-';
+                document.getElementById('department').textContent = '-';
+                document.getElementById('appointmentTime').textContent = '-';
+                return;
+            }
+
+            // 환자 정보 업데이트
+            document.getElementById('patientName').textContent = appointment.memberName || '-';
+            document.getElementById('department').textContent = appointment.departmentName || '-';
+            document.getElementById('appointmentTime').textContent = appointment.appointmentTime || '-';
+
+            const statusCard = document.getElementById('statusCard');
+            const statusText = document.getElementById('statusText');
+            const callMessage = document.getElementById('callMessage');
+            const departmentSpan = document.getElementById('departmentName');
+
+            // 상태별 처리
+            switch (appointment.status) {
+                case 'WAITING':
+                    statusText.textContent = '예약 확정 - 대기 중';
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+                    break;
+                    
+                case 'SCHEDULED':
+                    statusText.textContent = '오늘 내원 예정 - 대기 중';
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+                    break;
+                    
+                case 'ARRIVED':
+                    statusText.textContent = '체크인 완료 - 진료 대기 중';
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+                    break;
+                    
+                case 'CALLED':
+                    statusText.textContent = '진료실 호출됨!';
+                    statusCard.className = 'status-card called';
+                    callMessage.style.display = 'block';
+                    departmentSpan.textContent = appointment.departmentName || '진료과';
+                    
+                    // 알림음이나 진동 효과 (웹에서는 제한적)
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200]);
+                    }
+                    break;
+                    
+                case 'COMPLETED':
+                    statusText.textContent = '진료 완료';
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+                    break;
+                    
+                case 'CANCELLED':
+                    statusText.textContent = '예약 취소됨';
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+                    break;
+                    
+                default:
+                    statusText.textContent = `현재 상태: ${appointment.status}`;
+                    statusCard.className = 'status-card';
+                    callMessage.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -37,8 +37,7 @@ public class VerificationCodeService {
     private boolean verifyCode(final String phoneNumber, final String inputCode) {
         return verificationCodeRepository.findById(phoneNumber)
                 .map(verification -> verification.getCode().equals(inputCode))
-                .orElseThrow(() ->
-                        new BusinessException(ErrorCode.SMS_VERIFICATION_CODE_NOT_FOUND, "인증 코드가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SMS_VERIFICATION_CODE_NOT_FOUND));
     }
 
     private TemporaryMember createTemporaryMember(String phoneNumber) {

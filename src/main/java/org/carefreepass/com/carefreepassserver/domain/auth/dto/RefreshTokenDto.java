@@ -1,7 +1,7 @@
 package org.carefreepass.com.carefreepassserver.domain.auth.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
 
 public record RefreshTokenDto(
         @Schema(description = "회원 ID", example = "1")

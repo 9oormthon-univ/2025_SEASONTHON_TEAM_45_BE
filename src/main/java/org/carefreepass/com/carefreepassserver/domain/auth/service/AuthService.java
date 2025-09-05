@@ -13,9 +13,9 @@ import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.Temporar
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TokenPairResponse;
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.TemporaryMember;
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.VerificationCode;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
-import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.Member;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.repository.MemberRepository;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.carefreepass.com.carefreepassserver.golbal.security.JwtTokenProvider;

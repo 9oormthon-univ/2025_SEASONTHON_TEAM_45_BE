@@ -2,7 +2,7 @@ package org.carefreepass.com.carefreepassserver.domain.auth.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
 
 @Builder
 public record AccessTokenDto(

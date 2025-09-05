@@ -13,9 +13,9 @@ import org.carefreepass.com.carefreepassserver.domain.auth.dto.response.TokenPai
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.RefreshToken;
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.TemporaryMember;
 import org.carefreepass.com.carefreepassserver.domain.auth.repository.RefreshTokenRepository;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.PatientProfile;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.Member;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.PatientProfile;
 import org.carefreepass.com.carefreepassserver.domain.hospital.entity.Hospital;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;

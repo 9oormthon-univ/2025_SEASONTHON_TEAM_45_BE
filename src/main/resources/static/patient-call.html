@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환자 호출 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+        
+        input, select, button {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-call {
+            background: #e74c3c;
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+        
+        .btn-call:hover {
+            background: #c0392b;
+        }
+        
+        .btn-refresh {
+            background: #27ae60;
+        }
+        
+        .btn-refresh:hover {
+            background: #219a52;
+        }
+        
+        .patients-list {
+            padding: 20px;
+        }
+        
+        .patient-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .patient-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .patient-card.arrived {
+            border-left: 5px solid #27ae60;
+            background: #f8fff8;
+        }
+        
+        .patient-card.called {
+            border-left: 5px solid #f39c12;
+            background: #fffef8;
+        }
+        
+        .patient-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .patient-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .status-arrived {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-called {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .patient-details {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+        
+        .no-patients {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 환자 호출 시스템</h1>
+            <p>도착한 환자를 호출하세요</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="authToken">관리자 토큰:</label>
+                <input type="password" id="authToken" placeholder="JWT 토큰을 입력하세요" style="flex: 1;">
+                <button class="btn btn-refresh" onclick="loadPatients()">🔄 새로고침</button>
+            </div>
+            <div class="control-group">
+                <label for="autoRefresh">자동 새로고침:</label>
+                <select id="autoRefresh" onchange="toggleAutoRefresh()">
+                    <option value="0">사용 안함</option>
+                    <option value="10" selected>10초</option>
+                    <option value="30">30초</option>
+                    <option value="60">1분</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="alertContainer"></div>
+        
+        <div class="patients-list">
+            <div id="patientsContainer" class="loading">
+                환자 목록을 불러오는 중...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        const API_BASE = 'http://localhost:8080/api/v1';
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPatients();
+            toggleAutoRefresh();
+        });
+        
+        // 환자 목록 불러오기
+        async function loadPatients() {
+            const token = document.getElementById('authToken').value.trim();
+            
+            if (!token) {
+                showAlert('관리자 토큰을 입력해주세요.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/appointments/today`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                displayPatients(data.body || []);
+                
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                showAlert(`환자 목록 불러오기 실패: ${error.message}`, 'error');
+                document.getElementById('patientsContainer').innerHTML = 
+                    '<div class="no-patients">환자 목록을 불러올 수 없습니다.</div>';
+            }
+        }
+        
+        // 환자 목록 표시
+        function displayPatients(patients) {
+            const container = document.getElementById('patientsContainer');
+            
+            if (!patients || patients.length === 0) {
+                container.innerHTML = '<div class="no-patients">오늘 도착한 환자가 없습니다.</div>';
+                return;
+            }
+            
+            // ARRIVED 상태인 환자만 필터링 (호출 가능한 환자)
+            const callablePatients = patients.filter(patient => 
+                patient.status === 'ARRIVED' || patient.status === 'CALLED'
+            );
+            
+            if (callablePatients.length === 0) {
+                container.innerHTML = '<div class="no-patients">호출 가능한 환자가 없습니다.<br>체크인 완료된 환자만 호출할 수 있습니다.</div>';
+                return;
+            }
+            
+            container.innerHTML = callablePatients.map(patient => `
+                <div class="patient-card ${patient.status.toLowerCase()}">
+                    <div class="patient-info">
+                        <div class="patient-name">👤 ${patient.memberName}</div>
+                        <div class="status-badge status-${patient.status.toLowerCase()}">
+                            ${getStatusText(patient.status)}
+                        </div>
+                    </div>
+                    <div class="patient-details">
+                        📞 ${patient.phoneNumber || 'N/A'} | 
+                        🎂 ${patient.birthDate || 'N/A'} | 
+                        🏥 ${patient.hospitalName} - ${patient.departmentName} | 
+                        🕐 ${patient.appointmentTime}
+                    </div>
+                    <button class="btn btn-call" 
+                            onclick="callPatient(${patient.appointmentId}, '${patient.memberName}')"
+                            ${patient.status === 'CALLED' ? 'disabled' : ''}>
+                        ${patient.status === 'CALLED' ? '호출됨' : '🔔 환자 호출'}
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        // 환자 호출
+        async function callPatient(appointmentId, patientName) {
+            const token = document.getElementById('authToken').value.trim();
+            
+            if (!token) {
+                showAlert('관리자 토큰을 입력해주세요.', 'error');
+                return;
+            }
+            
+            if (!confirm(`${patientName} 환자를 호출하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/appointments/${appointmentId}/call`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                showAlert(`${patientName} 환자 호출 완료! 📢`, 'success');
+                loadPatients(); // 목록 새로고침
+                
+            } catch (error) {
+                console.error('Error calling patient:', error);
+                showAlert(`환자 호출 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 상태 텍스트 변환
+        function getStatusText(status) {
+            const statusMap = {
+                'WAITING': '예약 확정',
+                'SCHEDULED': '오늘 내원전',
+                'ARRIVED': '병원 도착',
+                'CALLED': '진료실 호출',
+                'COMPLETED': '진료 완료',
+                'CANCELLED': '예약 취소'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 알림 표시
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+        
+        // 자동 새로고침 토글
+        function toggleAutoRefresh() {
+            const interval = parseInt(document.getElementById('autoRefresh').value);
+            
+            // 기존 인터벌 제거
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            
+            // 새 인터벌 설정
+            if (interval > 0) {
+                autoRefreshInterval = setInterval(loadPatients, interval * 1000);
+            }
+        }
+    </script>
+</body>
+</html>

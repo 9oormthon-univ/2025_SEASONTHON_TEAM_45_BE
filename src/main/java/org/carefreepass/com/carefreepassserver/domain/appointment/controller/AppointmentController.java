@@ -139,7 +139,7 @@ public class AppointmentController implements AppointmentDocs {
                 .body(responses);
     }
 
-    // 관리자용 특정 날짜 예약 조회 API 추가
+    @Override
     @GetMapping("/date")
     public ApiResponseTemplate<List<AppointmentResponse>> getAppointmentsByDate(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
@@ -153,7 +153,7 @@ public class AppointmentController implements AppointmentDocs {
                 .body(responses);
     }
 
-    // 관리자용 환자 호출 API (폴링 기반)
+    @Override
     @PutMapping("/{appointmentId}/call")
     public ApiResponseTemplate<String> callPatient(@PathVariable Long appointmentId) {
         appointmentService.callPatient(appointmentId);
@@ -163,7 +163,7 @@ public class AppointmentController implements AppointmentDocs {
                 .body("SUCCESS");
     }
 
-    // 환자용 상태 확인 API (폴링용)
+    @Override
     @GetMapping("/my/status")
     public ApiResponseTemplate<List<AppointmentResponse>> getMyAppointmentStatus(@RequestParam Long memberId) {
         List<Appointment> appointments = appointmentService.getTodayAppointmentsByMemberId(memberId);
@@ -176,7 +176,7 @@ public class AppointmentController implements AppointmentDocs {
                 .body(responses);
     }
 
-    // 관리자용 예약 상태 수동 업데이트 API
+    @Override
     @PutMapping("/update-today-status")
     public ApiResponseTemplate<String> updateTodayAppointmentsStatus() {
         int updatedCount = appointmentService.updateTodayWaitingToScheduled();

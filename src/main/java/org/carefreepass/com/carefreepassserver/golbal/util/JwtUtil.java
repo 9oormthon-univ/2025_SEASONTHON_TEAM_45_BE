@@ -18,7 +18,7 @@ import org.carefreepass.com.carefreepassserver.domain.auth.dto.AccessTokenDto;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.RefreshTokenDto;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.TemporaryTokenDto;
 import org.carefreepass.com.carefreepassserver.domain.auth.entity.TokenType;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
 import org.carefreepass.com.carefreepassserver.golbal.properties.JwtProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;

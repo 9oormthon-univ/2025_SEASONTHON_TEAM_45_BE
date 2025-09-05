@@ -6,10 +6,12 @@ import org.carefreepass.com.carefreepassserver.domain.appointment.dto.request.Ap
 import org.carefreepass.com.carefreepassserver.domain.appointment.dto.response.TimeSlotResponse;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.AppointmentService;
 import org.carefreepass.com.carefreepassserver.domain.appointment.service.TimeSlotService;
+import org.carefreepass.com.carefreepassserver.domain.chat.dto.AppointmentInfo;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatSession;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.SymptomAnalysis;
 import org.carefreepass.com.carefreepassserver.domain.chat.repository.SymptomAnalysisRepository;
+import org.carefreepass.com.carefreepassserver.domain.chat.util.AppointmentKeywordMatcher;
 import org.carefreepass.com.carefreepassserver.golbal.config.ChatProperties;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.springframework.stereotype.Service;

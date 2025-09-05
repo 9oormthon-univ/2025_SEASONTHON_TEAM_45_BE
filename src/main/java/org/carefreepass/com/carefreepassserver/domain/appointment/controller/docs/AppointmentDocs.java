@@ -114,4 +114,50 @@ public interface AppointmentDocs {
             }
     )
     ApiResponseTemplate<List<AppointmentResponse>> getMyTodayAppointments(@RequestParam Long memberId);
+
+    @Operation(
+            summary = "특정 날짜 예약 조회 (관리자 전용)",
+            description = "관리자가 특정 날짜의 모든 예약을 조회합니다. 날짜 형식: yyyy-MM-dd",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "날짜별 예약 목록 조회 성공"),
+                    @ApiResponse(responseCode = "400", description = "잘못된 날짜 형식"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<List<AppointmentResponse>> getAppointmentsByDate(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(pattern = "yyyy-MM-dd") java.time.LocalDate date
+    );
+
+    @Operation(
+            summary = "환자 호출 (관리자 전용)",
+            description = "관리자가 특정 예약의 환자를 호출합니다. 예약 상태가 CALLED로 변경되어 환자 앱에서 폴링으로 감지할 수 있습니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "환자 호출 성공"),
+                    @ApiResponse(responseCode = "404", description = "예약을 찾을 수 없음"),
+                    @ApiResponse(responseCode = "400", description = "호출 불가능한 상태 (완료/취소된 예약)"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<String> callPatient(@PathVariable Long appointmentId);
+
+    @Operation(
+            summary = "내 예약 상태 조회 - 폴링용 (환자 전용)",
+            description = "환자가 본인의 오늘 예약 상태를 실시간으로 확인할 수 있습니다. 주로 호출 알림을 위한 폴링에 사용됩니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "내 예약 상태 조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "존재하지 않는 회원"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<List<AppointmentResponse>> getMyAppointmentStatus(@RequestParam Long memberId);
+
+    @Operation(
+            summary = "오늘 예약 상태 일괄 업데이트 (관리자 전용)",
+            description = "관리자가 오늘 날짜의 WAITING 상태 예약들을 SCHEDULED로 일괄 변경합니다. 주로 스케줄러나 수동 업데이트 시 사용됩니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "상태 업데이트 성공, 업데이트된 건수 반환"),
+                    @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            }
+    )
+    ApiResponseTemplate<String> updateTodayAppointmentsStatus();
 }

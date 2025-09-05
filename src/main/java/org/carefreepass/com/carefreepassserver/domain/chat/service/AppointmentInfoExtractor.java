@@ -2,13 +2,14 @@ package org.carefreepass.com.carefreepassserver.domain.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.carefreepass.com.carefreepassserver.domain.chat.dto.AppointmentInfo;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.MessageSenderType;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.SymptomAnalysis;
 import org.carefreepass.com.carefreepassserver.domain.hospital.entity.Hospital;
 import org.carefreepass.com.carefreepassserver.domain.hospital.repository.HospitalRepository;
 import org.carefreepass.com.carefreepassserver.golbal.config.ChatProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -16,7 +17,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Component
+/**
+ * 예약 정보 추출 서비스
+ * 사용자 메시지와 대화 히스토리에서 예약에 필요한 정보를 추출
+ */
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class AppointmentInfoExtractor {
@@ -24,13 +29,20 @@ public class AppointmentInfoExtractor {
     private final ChatProperties chatProperties;
     private final HospitalRepository hospitalRepository;
     
-    private static final int CONVERSATION_HISTORY_LIMIT = 3;
+    // 날짜 패턴 상수
     private static final Pattern DATE_PATTERN = Pattern.compile(
         "(\\d{1,2})월\\s*(\\d{1,2})일|(\\d{4})-(\\d{1,2})-(\\d{1,2})|(\\d{1,2})/(\\d{1,2})|내일|오늘|모레"
     );
+    
+    // 시간 패턴 상수
     private static final Pattern TIME_PATTERN = Pattern.compile(
         "(\\d{1,2})시\\s*(\\d{1,2}분)?|(\\d{1,2}):(\\d{2})|오전\\s*(\\d{1,2})시|오후\\s*(\\d{1,2})시"
     );
+    
+    // 기본값 상수
+    private static final Long DEFAULT_HOSPITAL_ID = 1L;
+    private static final String DEFAULT_HOSPITAL_NAME = "서울대병원";
+    private static final int MAX_HISTORY_CHECK = 3;
     
     public AppointmentInfo extractAppointmentInfo(String userMessage, List<ChatMessage> history, SymptomAnalysis analysis) {
         AppointmentInfo info = new AppointmentInfo();
@@ -45,7 +57,9 @@ public class AppointmentInfoExtractor {
         return info;
     }
     
-    // 병원 정보를 동적으로 설정
+    /**
+     * 병원 정보를 동적으로 설정
+     */
     private void setHospitalInfo(AppointmentInfo info) {
         try {
             Long hospitalId = chatProperties.getDefaultHospitalId();
@@ -54,11 +68,11 @@ public class AppointmentInfoExtractor {
                     
             info.setHospitalId(hospitalId);
             info.setHospitalName(hospital.getName());
+            log.debug("병원 정보 설정 완료: {} (ID: {})", hospital.getName(), hospitalId);
         } catch (Exception e) {
-            log.error("병원 정보 설정 실패", e);
-            // 기본값 설정
-            info.setHospitalId(1L);
-            info.setHospitalName("서울대병원");
+            log.error("병원 정보 설정 실패, 기본값 사용", e);
+            info.setHospitalId(DEFAULT_HOSPITAL_ID);
+            info.setHospitalName(DEFAULT_HOSPITAL_NAME);
         }
     }
     
@@ -89,8 +103,16 @@ public class AppointmentInfoExtractor {
         }
     }
     
+    /**
+     * 대화 히스토리에서 날짜/시간 정보를 추출
+     * 최근 MAX_HISTORY_CHECK개의 사용자 메시지만 확인
+     */
     private void extractDateTimeFromHistory(List<ChatMessage> history, AppointmentInfo info) {
-        int startIndex = Math.max(0, history.size() - CONVERSATION_HISTORY_LIMIT);
+        if (history == null || history.isEmpty()) {
+            return;
+        }
+        
+        int startIndex = Math.max(0, history.size() - MAX_HISTORY_CHECK);
         for (int i = startIndex; i < history.size(); i++) {
             ChatMessage message = history.get(i);
             if (message.getSenderType() == MessageSenderType.USER) {

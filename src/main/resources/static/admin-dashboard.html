@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>병원 관리자 대시보드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 로그인 폼 스타일 */
+        .login-section {
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .login-form h2 {
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* 대시보드 스타일 */
+        .dashboard {
+            display: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-login {
+            background: #27ae60;
+            font-size: 18px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn-logout {
+            background: #e74c3c;
+        }
+        
+        .btn-call {
+            background: #e74c3c;
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+        
+        .btn-call:hover {
+            background: #c0392b;
+        }
+        
+        .btn-call:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-refresh {
+            background: #27ae60;
+        }
+        
+        .btn-refresh:hover {
+            background: #219a52;
+        }
+        
+        select, input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .patients-list {
+            padding: 20px;
+        }
+        
+        .patient-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .patient-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .patient-card.scheduled {
+            border-left: 5px solid #3498db;
+            background: #f8fbff;
+        }
+        
+        .patient-card.arrived {
+            border-left: 5px solid #27ae60;
+            background: #f8fff8;
+        }
+        
+        .patient-card.called {
+            border-left: 5px solid #f39c12;
+            background: #fffef8;
+        }
+        
+        .patient-card.completed {
+            border-left: 5px solid #95a5a6;
+            background: #f8f9fa;
+        }
+        
+        .patient-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .patient-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .status-scheduled {
+            background: #d6eaf8;
+            color: #1b4f72;
+        }
+        
+        .status-arrived {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-called {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .patient-details {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .patient-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+        
+        .no-patients {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .control-group label {
+                min-width: auto;
+            }
+            
+            .patient-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .patient-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 로그인 섹션 -->
+        <div id="loginSection" class="login-section">
+            <div class="login-form">
+                <h2>🏥 병원 관리자 로그인</h2>
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" placeholder="관리자 이메일을 입력하세요" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
+                </div>
+                <button class="btn btn-login" onclick="login()">로그인</button>
+            </div>
+        </div>
+        
+        <!-- 대시보드 섹션 -->
+        <div id="dashboardSection" class="dashboard">
+            <div class="header">
+                <div>
+                    <h1>🏥 병원 관리자 대시보드</h1>
+                    <p id="hospitalName">병원명</p>
+                </div>
+                <div class="user-info">
+                    <span id="adminName">관리자명</span>
+                    <button class="btn btn-logout" onclick="logout()">로그아웃</button>
+                </div>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalToday">0</div>
+                    <div class="stat-label">오늘 총 예약</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="arrivedCount">0</div>
+                    <div class="stat-label">도착한 환자</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="calledCount">0</div>
+                    <div class="stat-label">호출된 환자</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedCount">0</div>
+                    <div class="stat-label">진료 완료</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="viewMode">보기 모드:</label>
+                    <select id="viewMode" onchange="loadPatients()">
+                        <option value="all">전체 환자</option>
+                        <option value="callable" selected>호출 가능한 환자</option>
+                        <option value="waiting">대기 중인 환자</option>
+                    </select>
+                    <button class="btn btn-refresh" onclick="loadPatients()">🔄 새로고침</button>
+                </div>
+                <div class="control-group">
+                    <label for="autoRefresh">자동 새로고침:</label>
+                    <select id="autoRefresh" onchange="toggleAutoRefresh()">
+                        <option value="0">사용 안함</option>
+                        <option value="10" selected>10초</option>
+                        <option value="30">30초</option>
+                        <option value="60">1분</option>
+                    </select>
+                    <span style="color: #666; font-size: 0.9rem;">현재 시간: <span id="currentTime"></span></span>
+                </div>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <div class="patients-list">
+                <div id="patientsContainer" class="loading">
+                    환자 목록을 불러오는 중...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let autoRefreshInterval = null;
+        let timeInterval = null;
+        const API_BASE = 'http://localhost:8080/api/v1';
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 저장된 토큰 확인
+            authToken = localStorage.getItem('adminToken');
+            if (authToken) {
+                showDashboard();
+                loadPatients();
+                toggleAutoRefresh();
+            }
+            
+            // 현재 시간 업데이트
+            updateCurrentTime();
+            timeInterval = setInterval(updateCurrentTime, 1000);
+            
+            // Enter 키로 로그인
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && document.getElementById('loginSection').style.display !== 'none') {
+                    login();
+                }
+            });
+        });
+        
+        // 현재 시간 업데이트
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR');
+            const dateString = now.toLocaleDateString('ko-KR');
+            document.getElementById('currentTime').textContent = `${dateString} ${timeString}`;
+        }
+        
+        // 관리자 로그인
+        async function login() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!email || !password) {
+                showAlert('이메일과 비밀번호를 입력해주세요.', 'error');
+                return;
+            }
+            
+            console.log('전송할 데이터:', { adminEmail: email, adminPassword: password });
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/hospital/sign-in`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        adminEmail: email,
+                        adminPassword: password
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('로그인 실패: 이메일 또는 비밀번호를 확인해주세요.');
+                }
+                
+                const data = await response.json();
+                authToken = data.body.accessToken;
+                localStorage.setItem('adminToken', authToken);
+                
+                // 사용자 정보 표시
+                document.getElementById('adminName').textContent = data.body.memberName || '관리자';
+                document.getElementById('hospitalName').textContent = data.body.hospitalName || '병원명';
+                
+                showDashboard();
+                loadPatients();
+                toggleAutoRefresh();
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert(error.message, 'error');
+            }
+        }
+        
+        // 로그아웃
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('adminToken');
+            
+            // 자동 새로고침 중지
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            
+            // 폼 초기화
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            
+            // 로그인 화면으로 전환
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('dashboardSection').classList.remove('dashboard');
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('dashboardSection').classList.add('dashboard');
+        }
+        
+        // 환자 목록 불러오기
+        async function loadPatients() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/appointments/today`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showAlert('인증이 만료되었습니다. 다시 로그인해주세요.', 'error');
+                        logout();
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const patients = data.body || [];
+                
+                updateStatistics(patients);
+                displayPatients(patients);
+                
+            } catch (error) {
+                console.error('Error loading patients:', error);
+                showAlert(`환자 목록 불러오기 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 통계 업데이트
+        function updateStatistics(patients) {
+            const total = patients.length;
+            const arrived = patients.filter(p => p.status === 'ARRIVED').length;
+            const called = patients.filter(p => p.status === 'CALLED').length;
+            const completed = patients.filter(p => p.status === 'COMPLETED').length;
+            
+            document.getElementById('totalToday').textContent = total;
+            document.getElementById('arrivedCount').textContent = arrived;
+            document.getElementById('calledCount').textContent = called;
+            document.getElementById('completedCount').textContent = completed;
+        }
+        
+        // 환자 목록 표시
+        function displayPatients(allPatients) {
+            const container = document.getElementById('patientsContainer');
+            const viewMode = document.getElementById('viewMode').value;
+            
+            let patients = allPatients;
+            
+            // 보기 모드에 따른 필터링
+            switch (viewMode) {
+                case 'callable':
+                    patients = allPatients.filter(p => p.status === 'ARRIVED' || p.status === 'CALLED');
+                    break;
+                case 'waiting':
+                    patients = allPatients.filter(p => 
+                        ['SCHEDULED', 'ARRIVED', 'CALLED'].includes(p.status));
+                    break;
+                // 'all'은 필터링 없음
+            }
+            
+            if (patients.length === 0) {
+                const message = viewMode === 'callable' ? 
+                    '호출 가능한 환자가 없습니다.<br>체크인 완료된 환자만 호출할 수 있습니다.' :
+                    viewMode === 'waiting' ? 
+                    '대기 중인 환자가 없습니다.' :
+                    '오늘 예약된 환자가 없습니다.';
+                container.innerHTML = `<div class="no-patients">${message}</div>`;
+                return;
+            }
+            
+            container.innerHTML = patients.map(patient => `
+                <div class="patient-card ${patient.status.toLowerCase()}">
+                    <div class="patient-info">
+                        <div class="patient-name">👤 ${patient.memberName}</div>
+                        <div class="status-badge status-${patient.status.toLowerCase()}">
+                            ${getStatusText(patient.status)}
+                        </div>
+                    </div>
+                    <div class="patient-details">
+                        📞 ${patient.phoneNumber || 'N/A'} | 
+                        🎂 ${patient.birthDate || 'N/A'} | 
+                        🏥 ${patient.hospitalName} - ${patient.departmentName} | 
+                        🕐 ${patient.appointmentTime} | 
+                        📅 ${patient.appointmentDate}
+                    </div>
+                    <div class="patient-actions">
+                        <button class="btn btn-call" 
+                                onclick="callPatient(${patient.appointmentId}, '${patient.memberName}')"
+                                ${patient.status !== 'ARRIVED' ? 'disabled' : ''}>
+                            ${patient.status === 'CALLED' ? '호출됨' : 
+                              patient.status === 'ARRIVED' ? '🔔 환자 호출' : '호출 불가'}
+                        </button>
+                        <select onchange="changePatientStatus(${patient.appointmentId}, this.value, '${patient.memberName}')">
+                            <option value="">상태 변경</option>
+                            <option value="SCHEDULED" ${patient.status === 'SCHEDULED' ? 'selected' : ''}>오늘 내원전</option>
+                            <option value="ARRIVED" ${patient.status === 'ARRIVED' ? 'selected' : ''}>병원 도착</option>
+                            <option value="CALLED" ${patient.status === 'CALLED' ? 'selected' : ''}>진료실 호출</option>
+                            <option value="COMPLETED" ${patient.status === 'COMPLETED' ? 'selected' : ''}>진료 완료</option>
+                            <option value="CANCELLED" ${patient.status === 'CANCELLED' ? 'selected' : ''}>예약 취소</option>
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 환자 호출
+        async function callPatient(appointmentId, patientName) {
+            if (!confirm(`${patientName} 환자를 호출하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/appointments/${appointmentId}/call`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                showAlert(`${patientName} 환자 호출 완료! 📢`, 'success');
+                loadPatients();
+                
+            } catch (error) {
+                console.error('Error calling patient:', error);
+                showAlert(`환자 호출 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 환자 상태 변경
+        async function changePatientStatus(appointmentId, newStatus, patientName) {
+            if (!newStatus) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/appointments/${appointmentId}/status/${newStatus}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                showAlert(`${patientName} 환자 상태가 ${getStatusText(newStatus)}로 변경되었습니다.`, 'success');
+                loadPatients();
+                
+            } catch (error) {
+                console.error('Error changing status:', error);
+                showAlert(`상태 변경 실패: ${error.message}`, 'error');
+                loadPatients(); // 원래 상태로 복원
+            }
+        }
+        
+        // 상태 텍스트 변환
+        function getStatusText(status) {
+            const statusMap = {
+                'WAITING': '예약 확정',
+                'SCHEDULED': '오늘 내원전',
+                'ARRIVED': '병원 도착',
+                'CALLED': '진료실 호출',
+                'COMPLETED': '진료 완료',
+                'CANCELLED': '예약 취소'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 알림 표시
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+        
+        // 자동 새로고침 토글
+        function toggleAutoRefresh() {
+            const interval = parseInt(document.getElementById('autoRefresh').value);
+            
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            
+            if (interval > 0 && authToken) {
+                autoRefreshInterval = setInterval(loadPatients, interval * 1000);
+            }
+        }
+    </script>
+</body>
+</html>

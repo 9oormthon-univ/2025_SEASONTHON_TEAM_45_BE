@@ -12,7 +12,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.Member;
 
 @Entity
 @Getter

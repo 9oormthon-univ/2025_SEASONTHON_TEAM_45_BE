@@ -2,8 +2,8 @@ package org.carefreepass.com.carefreepassserver.golbal.util;
 
 
 import lombok.RequiredArgsConstructor;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
-import org.carefreepass.com.carefreepassserver.domain.member.repository.MemberRepository;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.Member;
+import org.carefreepass.com.carefreepassserver.domain.auth.repository.MemberRepository;
 import org.carefreepass.com.carefreepassserver.golbal.error.BusinessException;
 import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Component;

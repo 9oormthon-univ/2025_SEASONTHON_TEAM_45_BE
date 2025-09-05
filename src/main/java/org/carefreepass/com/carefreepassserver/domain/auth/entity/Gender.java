@@ -1,4 +1,4 @@
-package org.carefreepass.com.carefreepassserver.domain.member.entity;
+package org.carefreepass.com.carefreepassserver.domain.auth.entity;
 
 import java.util.Arrays;
 import lombok.Getter;

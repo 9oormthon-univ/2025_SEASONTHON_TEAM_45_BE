@@ -3,6 +3,7 @@ package org.carefreepass.com.carefreepassserver.domain.chat.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,5 +24,6 @@ public class ChatMessageRequest {
 
     @Schema(description = "채팅 메시지 내용", example = "머리가 아파요")
     @NotBlank(message = "메시지 내용은 필수입니다.")
+    @Size(max = 500, message = "메시지는 500자 이내로 입력해주세요.")
     private String content;
 }

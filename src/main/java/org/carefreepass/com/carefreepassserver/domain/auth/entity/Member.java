@@ -1,4 +1,4 @@
-package org.carefreepass.com.carefreepassserver.domain.member.entity;
+package org.carefreepass.com.carefreepassserver.domain.auth.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,7 +7,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -44,20 +43,17 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
 
     @Builder(access = AccessLevel.PRIVATE)
     private Member(MemberRole role, Status status,
                    String name, String phoneNumber,
-                   String email, String password, LocalDate birthDate) {
+                   String email, String password) {
         this.role = role;
         this.status = status;
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.email = email;
         this.password = password;
-        this.birthDate = birthDate;
     }
 
     public static Member createPatient(String name, String phoneNumber, String password) {
@@ -67,18 +63,6 @@ public class Member extends BaseTimeEntity {
                 .name(name)
                 .phoneNumber(phoneNumber)
                 .password(password)
-                .birthDate(null) // 기존 호환성을 위해 null로 설정
-                .build();
-    }
-
-    public static Member createPatient(String name, String phoneNumber, String password, LocalDate birthDate) {
-        return Member.builder()
-                .role(MemberRole.USER)
-                .status(Status.ACTIVE)
-                .name(name)
-                .phoneNumber(phoneNumber)
-                .password(password)
-                .birthDate(birthDate)
                 .build();
     }
 
@@ -90,7 +74,6 @@ public class Member extends BaseTimeEntity {
                 .name(name)
                 .email(email)
                 .password(password)
-                .birthDate(null)
                 .build();
     }
 }

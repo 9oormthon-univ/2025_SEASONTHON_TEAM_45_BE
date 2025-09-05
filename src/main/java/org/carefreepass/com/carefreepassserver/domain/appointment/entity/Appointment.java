@@ -18,51 +18,45 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.carefreepass.com.carefreepassserver.domain.hospital.entity.HospitalDepartment;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.Member;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.Member;
 import org.carefreepass.com.carefreepassserver.golbal.domain.BaseTimeEntity;
 
-/**
- * 병원 예약 엔티티
- * 환자의 병원 진료 예약 정보를 관리합니다.
- */
+// 병원 예약 엔티티 - 환자의 병원 진료 예약 정보 관리
 @Entity
 @Getter
 @EqualsAndHashCode(callSuper = false, of = "id")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Appointment extends BaseTimeEntity {
 
-    /** 예약 고유 식별자 */
+    // 예약 고유 식별자
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 예약한 환자 정보 */
+    // 예약한 환자 정보
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    /** 예약 진료과 */
+    // 예약 진료과
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hospital_department_id", nullable = false)
     private HospitalDepartment hospitalDepartment;
 
-    /** 예약 날짜 */
+    // 예약 날짜
     @Column(nullable = false)
     private LocalDate appointmentDate;
 
-    /** 예약 시간 */
+    // 예약 시간
     @Column(nullable = false)
     private LocalTime appointmentTime;
 
-    /** 예약 상태 (WAITING, SCHEDULED, ARRIVED, CALLED, COMPLETED, CANCELLED) */
+    // 예약 상태 (WAITING, SCHEDULED, ARRIVED, CALLED, COMPLETED, CANCELLED)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AppointmentStatus status;
 
-    /**
-     * 예약 엔티티 생성자 (빌더 패턴)
-     * 외부에서 직접 호출할 수 없으며, 정적 팩토리 메서드를 통해서만 생성 가능
-     */
+    // 예약 엔티티 생성자 (빌더 패턴) - 외부에서 직접 호출 불가, 정적 팩토리 메서드 통해서만 생성
     @Builder(access = AccessLevel.PRIVATE)
     private Appointment(Member member, HospitalDepartment hospitalDepartment,
                        LocalDate appointmentDate, LocalTime appointmentTime, AppointmentStatus status) {
@@ -73,18 +67,7 @@ public class Appointment extends BaseTimeEntity {
         this.status = status;
     }
 
-    /**
-     * 예약 생성 정적 팩토리 메서드
-     * 새로운 예약을 생성하며, 날짜에 따라 초기 상태를 설정합니다.
-     * - 오늘 날짜: SCHEDULED (오늘 내원전)
-     * - 미래 날짜: WAITING (예약 확정)
-     * 
-     * @param member 예약한 환자
-     * @param hospitalDepartment 예약 진료과
-     * @param appointmentDate 예약 날짜
-     * @param appointmentTime 예약 시간
-     * @return 생성된 예약 엔티티
-     */
+    // 예약 생성 - 새로운 예약 생성 및 날짜에 따른 초기 상태 설정 (오늘:SCHEDULED, 미래:WAITING)
     public static Appointment createAppointment(Member member, HospitalDepartment hospitalDepartment,
                                               LocalDate appointmentDate, LocalTime appointmentTime) {
         // 오늘 날짜면 SCHEDULED, 미래 날짜면 WAITING
@@ -101,57 +84,32 @@ public class Appointment extends BaseTimeEntity {
                 .build();
     }
 
-    /**
-     * 예약 상태 변경
-     * 
-     * @param status 변경할 예약 상태
-     */
+    // 예약 상태 변경
     public void updateStatus(AppointmentStatus status) {
         this.status = status;
     }
 
-    /**
-     * 환자 체크인 처리
-     * 예약 상태를 ARRIVED(도착)로 변경합니다.
-     */
+    // 환자 체크인 처리 - 예약 상태를 ARRIVED(도착)로 변경
     public void checkin() {
         this.status = AppointmentStatus.ARRIVED;
     }
 
-    /**
-     * 오늘 내원 예정 상태로 변경 (오늘 날짜가 되었을 때)
-     * 예약 상태를 WAITING에서 SCHEDULED로 변경합니다.
-     */
+    // 오늘 내원 예정 상태 변경 - WAITING에서 SCHEDULED로 변경
     public void scheduleForToday() {
         this.status = AppointmentStatus.SCHEDULED;
     }
 
-    /**
-     * 환자 호출 처리
-     * 예약 상태를 CALLED(호출됨)로 변경합니다.
-     */
+    // 환자 호출 처리 - 예약 상태를 CALLED(호출됨)로 변경
     public void call() {
         this.status = AppointmentStatus.CALLED;
     }
 
-    /**
-     * 환자 호출 가능 여부 확인
-     * 완료되거나 취소된 예약은 호출할 수 없습니다.
-     * 
-     * @return 호출 가능 여부
-     */
+    // 환자 호출 가능 여부 확인 (완료되거나 취소된 예약은 호출 불가)
     public boolean canCall() {
         return this.status != AppointmentStatus.COMPLETED && this.status != AppointmentStatus.CANCELLED;
     }
 
-    /**
-     * 예약 정보 수정
-     * 완료되거나 취소된 예약이 아닌 경우에만 수정 가능합니다.
-     * 
-     * @param hospitalDepartment 변경할 진료과
-     * @param appointmentDate 변경할 예약 날짜
-     * @param appointmentTime 변경할 예약 시간
-     */
+    // 예약 정보 수정 (완료되거나 취소된 예약은 수정 불가)
     public void updateAppointment(HospitalDepartment hospitalDepartment,
                                 LocalDate appointmentDate, LocalTime appointmentTime) {
         this.hospitalDepartment = hospitalDepartment;
@@ -159,20 +117,12 @@ public class Appointment extends BaseTimeEntity {
         this.appointmentTime = appointmentTime;
     }
 
-    /**
-     * 병원명 조회 (편의 메서드)
-     * 
-     * @return 병원명
-     */
+    // 병원명 조회 (편의 메서드)
     public String getHospitalName() {
         return this.hospitalDepartment.getHospital().getName();
     }
 
-    /**
-     * 진료과명 조회 (편의 메서드)
-     * 
-     * @return 진료과명
-     */
+    // 진료과명 조회 (편의 메서드)
     public String getDepartmentName() {
         return this.hospitalDepartment.getName();
     }

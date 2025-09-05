@@ -14,10 +14,7 @@ import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 시간 차단 관리 서비스
- * 병원 관리자가 특정 시간을 차단하거나 해제하는 기능을 담당합니다.
- */
+// 시간 차단 관리 서비스
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,14 +23,7 @@ public class TimeSlotExceptionService {
     private final TimeSlotExceptionRepository timeSlotExceptionRepository;
     private final HospitalDepartmentRepository hospitalDepartmentRepository;
 
-    /**
-     * 특정 시간 차단
-     * 
-     * @param request 시간 차단 요청
-     * @return 생성된 시간 예외 ID
-     * @throws BusinessException 진료과를 찾을 수 없는 경우 (DEPARTMENT_NOT_FOUND)
-     * @throws BusinessException 이미 차단된 시간인 경우 (TIME_SLOT_ALREADY_BLOCKED)
-     */
+    // 특정 시간 차단
     @Transactional
     public Long blockTimeSlot(TimeSlotBlockRequest request) {
         // 진료과 존재 여부 확인
@@ -70,14 +60,7 @@ public class TimeSlotExceptionService {
 
 
 
-    /**
-     * 진료과의 특정 날짜 모든 시간 예외 조회
-     * 
-     * @param departmentId 진료과 ID
-     * @param date 조회할 날짜
-     * @return 시간 예외 목록
-     * @throws BusinessException 진료과를 찾을 수 없는 경우 (DEPARTMENT_NOT_FOUND)
-     */
+    // 진료과의 특정 날짜 모든 시간 예외 조회
     public List<TimeSlotException> getAllTimeExceptions(Long departmentId, LocalDate date) {
         HospitalDepartment department = hospitalDepartmentRepository.findById(departmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEPARTMENT_NOT_FOUND));
@@ -85,12 +68,7 @@ public class TimeSlotExceptionService {
         return timeSlotExceptionRepository.findByHospitalDepartmentAndExceptionDate(department, date);
     }
 
-    /**
-     * 시간 예외 삭제 (완전 제거)
-     * 
-     * @param exceptionId 시간 예외 ID
-     * @throws BusinessException 시간 예외를 찾을 수 없는 경우 (TIME_SLOT_EXCEPTION_NOT_FOUND)
-     */
+    // 시간 예외 삭제 (완전 제거)
     @Transactional
     public void deleteTimeSlotException(Long exceptionId) {
         TimeSlotException exception = timeSlotExceptionRepository.findById(exceptionId)

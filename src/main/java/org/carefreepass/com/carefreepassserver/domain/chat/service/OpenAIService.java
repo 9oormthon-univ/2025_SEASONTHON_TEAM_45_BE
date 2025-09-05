@@ -13,6 +13,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * OpenAI GPT API 클라이언트 서비스
+ * ChatGPT API를 통한 AI 채팅 응답 생성
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,7 +25,13 @@ public class OpenAIService {
     private final OpenAiService openAiService;
     private final OpenAIProperties openAIProperties;
 
-
+    /**
+     * 대화 히스토리와 사용자 메시지를 기반으로 AI 응답 생성
+     *
+     * @param conversationHistory 기존 대화 히스토리
+     * @param userMessage 현재 사용자 메시지
+     * @return AI 생성 응답
+     */
     public String generateResponse(List<org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage> conversationHistory, String userMessage) {
         try {
             log.info("OpenAI API 호출 시작: 사용자 메시지 = {}", userMessage);
@@ -66,45 +76,26 @@ public class OpenAIService {
         }
     }
 
-    public String analyzeSymptoms(String userMessage) {
-        try {
-            String symptomAnalysisPrompt = """
-                다음 증상을 분석하고 적절한 진료과를 추천해주세요:
-                
-                증상: %s
-                
-                응답 형식:
-                - 추천 진료과: [진료과명]
-                - 이유: [간단한 설명]
-                - 추가 질문: [필요한 경우]
-                """.formatted(userMessage);
-                
-            List<ChatMessage> messages = List.of(
-                new ChatMessage(ChatMessageRole.SYSTEM.value(), openAIProperties.getSystemPromptAnalysis()),
-                new ChatMessage(ChatMessageRole.USER.value(), symptomAnalysisPrompt)
-            );
-            
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(openAIProperties.getModel())
-                    .messages(messages)
-                    .maxTokens(openAIProperties.getMaxTokensAnalysis())
-                    .temperature(openAIProperties.getTemperatureAnalysis())
-                    .build();
-                    
-            ChatCompletionResult result = openAiService.createChatCompletion(request);
-            return result.getChoices().get(0).getMessage().getContent();
-            
-        } catch (Exception e) {
-            log.error("증상 분석 실패: {}", e.getMessage());
-            return "죄송합니다. 증상 분석 중 오류가 발생했습니다. 내과 진료를 권합니다.";
-        }
-    }
-
+    /**
+     * API 호출 실패 시 사용할 기본 응답 생성
+     *
+     * @param userMessage 사용자 메시지
+     * @return 기본 응답
+     */
     private String generateFallbackResponse(String userMessage) {
-        // OpenAI API 실패 시 기본 응답
-        if (userMessage.contains("아프") || userMessage.contains("통증")) {
-            return "증상을 알려주셔서 감사합니다. 정확한 진단을 위해 내과 진료를 받으시기를 권합니다. " +
-                   "언제부터 아프셨는지, 어떤 종류의 통증인지 더 자세히 알려주시겠어요?";
+        String lowerMessage = userMessage.toLowerCase();
+        
+        // 증상 관련 키워드가 포함된 경우
+        if (lowerMessage.contains("아프") || lowerMessage.contains("통증") || 
+            lowerMessage.contains("아픈") || lowerMessage.contains("불편")) {
+            return "증상을 알려주셔서 감사합니다. 정확한 진단을 위해 더 자세한 정보가 필요해요. " +
+                   "어떤 부위가 아프신지, 언제부터 아프셨는지 더 자세히 알려주시겠어요?";
+        }
+        
+        // 예약 관련 키워드가 포함된 경우
+        if (lowerMessage.contains("예약") || lowerMessage.contains("병원")) {
+            return "예약 관련 문의해주셔서 감사합니다. 어떤 진료과 예약을 원하시나요? " +
+                   "먼저 증상을 알려주시면 적절한 진료과를 안내해드릴게요.";
         }
         
         return "안녕하세요! 어떤 증상으로 문의주셨나요? 자세히 말씀해주시면 적절한 진료과를 안내해드리겠습니다.";

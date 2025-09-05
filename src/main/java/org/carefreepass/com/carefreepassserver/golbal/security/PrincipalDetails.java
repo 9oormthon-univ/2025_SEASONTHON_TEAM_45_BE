@@ -3,7 +3,7 @@ package org.carefreepass.com.carefreepassserver.golbal.security;
 import java.util.Collection;
 import java.util.Collections;
 import lombok.AllArgsConstructor;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

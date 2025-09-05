@@ -12,7 +12,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.carefreepass.com.carefreepassserver.domain.auth.dto.AccessTokenDto;
-import org.carefreepass.com.carefreepassserver.domain.member.entity.MemberRole;
+import org.carefreepass.com.carefreepassserver.domain.auth.entity.MemberRole;
 import org.carefreepass.com.carefreepassserver.golbal.security.JwtTokenProvider;
 import org.carefreepass.com.carefreepassserver.golbal.security.PrincipalDetails;
 import org.springframework.http.HttpHeaders;
