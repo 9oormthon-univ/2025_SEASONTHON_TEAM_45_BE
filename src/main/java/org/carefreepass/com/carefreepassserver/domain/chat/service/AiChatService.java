@@ -29,6 +29,7 @@ public class AiChatService {
     private final MemberRepository memberRepository;
     private final OpenAIService openAIService;
     private final AppointmentBookingService appointmentBookingService;
+    private final SmartSymptomAnalyzer smartSymptomAnalyzer;
 
     @Transactional
     public ChatSession startNewChatSession(Long memberId, String initialMessage) {
@@ -210,7 +211,7 @@ public class AiChatService {
 
     
     /**
-     * GPT 응답에서 진료과 정보를 추출합니다.
+     * 스마트 증상 분석을 사용한 진료과 추천
      */
     private AnalysisResult extractDepartmentFromGptResponse(String gptResponse, String userMessage) {
         // 1순위: 사용자가 직접 진료과를 명시했는지 확인
@@ -226,30 +227,52 @@ public class AiChatService {
             );
         }
         
-        // 2순위: GPT 응답에서 진료과 찾기
-        List<String> availableDepartments = chatProperties.getAvailableDepartments();
+        // 2순위: 스마트 증상 분석 사용
+        SmartSymptomAnalyzer.AnalysisResult smartResult = smartSymptomAnalyzer.analyzeSymptom(userMessage);
         
+        if (smartResult.isNeedsMoreInfo()) {
+            // 추가 질문이 필요한 경우
+            return new AnalysisResult(
+                List.of("단계별 증상 분석"),
+                null,
+                0.0,
+                smartResult.getMessage(),
+                List.of(smartResult.getFollowUpQuestion())
+            );
+        } else if (smartResult.getDepartment() != null) {
+            // 진료과가 결정된 경우
+            return new AnalysisResult(
+                List.of("스마트 증상 분석"),
+                smartResult.getDepartment(),
+                smartResult.getConfidence(),
+                smartResult.getMessage(),
+                List.of("예약을 진행하시겠습니까?")
+            );
+        }
+        
+        // 3순위: 기존 GPT 응답 분석 (백업)
+        List<String> availableDepartments = chatProperties.getAvailableDepartments();
         String gptLower = gptResponse.toLowerCase();
-        String foundDepartment = "내과"; // 기본값
-        double confidence = 0.8;
         
         for (String dept : availableDepartments) {
             if (gptLower.contains(dept.toLowerCase())) {
-                foundDepartment = dept;
-                confidence = 0.9;
-                break;
+                return new AnalysisResult(
+                    List.of("GPT 응답 분석"),
+                    dept,
+                    0.7,
+                    "AI 분석 결과 " + dept + " 진료를 추천드립니다.",
+                    List.of("예약하시겠습니까?")
+                );
             }
         }
         
-        List<String> symptoms = List.of("AI 분석을 통한 증상");
-        List<String> questions = List.of("추가 증상이나 궁금한 점이 있으신가요?");
-        
+        // 최종 백업: 진료과별 선택 옵션 제공
         return new AnalysisResult(
-            symptoms,
-            foundDepartment, 
-            confidence,
-            "AI가 종합적으로 분석하여 " + foundDepartment + " 진료를 추천드립니다.",
-            questions
+            List.of("증상 분석"),
+            null,
+            0.0,
+            "증상을 더 정확히 분석하기 위해 몇 가지 질문을 드릴게요.",
+            List.of(smartSymptomAnalyzer.createBodyPartQuestion().getFollowUpQuestion())
         );
     }
     

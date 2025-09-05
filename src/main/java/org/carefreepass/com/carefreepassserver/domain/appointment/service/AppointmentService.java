@@ -23,10 +23,7 @@ import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 예약 관리 서비스
- * 환자의 병원 예약 생성, 수정, 삭제, 조회 및 호출 기능을 담당합니다.
- */
+// 예약 관리 서비스
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,16 +35,7 @@ public class AppointmentService {
     private final HospitalRepository hospitalRepository;
     private final HospitalDepartmentRepository hospitalDepartmentRepository;
 
-    /**
-     * 새로운 예약을 생성합니다.
-     * 
-     * @param request 예약 생성 요청 정보
-     * @return 생성된 예약 ID
-     * @throws BusinessException 존재하지 않는 회원인 경우 (MEMBER_NOT_FOUND)
-     * @throws BusinessException 존재하지 않는 병원인 경우 (HOSPITAL_NOT_FOUND)
-     * @throws BusinessException 존재하지 않는 진료과인 경우 (DEPARTMENT_NOT_FOUND)
-     * @throws BusinessException 해당 날짜에 이미 예약이 있는 경우 (APPOINTMENT_DUPLICATE_DATE, APPOINTMENT_TIME_UNAVAILABLE)
-     */
+    // 새로운 예약 생성
     @Transactional
     public Long createAppointment(AppointmentCreateRequest request) {
         // 회원 존재 여부 검증
@@ -99,15 +87,7 @@ public class AppointmentService {
         return savedAppointment.getId();
     }
 
-    /**
-     * 환자 체크인을 처리합니다.
-     * SCHEDULED 상태의 예약을 ARRIVED 상태로 변경합니다.
-     * 
-     * @param appointmentId 예약 ID
-     * @param memberId 환자 ID
-     * @throws BusinessException 존재하지 않는 예약이거나 본인 예약이 아닌 경우 (APPOINTMENT_NOT_FOUND, FORBIDDEN)
-     * @throws BusinessException 체크인 불가능한 상태인 경우 (APPOINTMENT_CANNOT_MODIFY_COMPLETED)
-     */
+    // 환자 체크인 처리
     @Transactional
     public void checkinAppointment(Long appointmentId, Long memberId) {
         // 예약 조회
@@ -185,14 +165,7 @@ public class AppointmentService {
                 appointment.getMember().getName(), appointmentId, request.getDepartmentName());
     }
 
-    /**
-     * 환자를 호출합니다. (폴링 기반)
-     * 예약 상태를 CALLED로 변경하여 환자 앱에서 폴링으로 감지할 수 있도록 합니다.
-     * 
-     * @param appointmentId 예약 ID
-     * @throws BusinessException 존재하지 않는 예약인 경우 (APPOINTMENT_NOT_FOUND)
-     * @throws BusinessException 호출 불가능한 상태인 경우 (APPOINTMENT_CALL_NOT_AVAILABLE)
-     */
+    // 환자 호출 (폴링 기반)
     @Transactional
     public void callPatient(Long appointmentId) {
         // 예약 조회
@@ -215,14 +188,16 @@ public class AppointmentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
     }
 
-    // 환자용 예약 조회 메서드 추가
+    // 환자용 예약 조회 메서드 (과거 예약 제외)
     public List<Appointment> getAppointmentsByMemberId(Long memberId) {
         // 회원 존재 여부 확인
         if (!memberRepository.existsById(memberId)) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
         
-        return appointmentRepository.findByMemberIdOrderByAppointmentDateDescAppointmentTimeDesc(memberId);
+        // 현재 날짜 이후의 예약만 조회 (과거 예약 제외)
+        LocalDate today = LocalDate.now();
+        return appointmentRepository.findByMemberIdAndAppointmentDateGreaterThanEqual(memberId, today);
     }
 
     public List<Appointment> getTodayAppointmentsByMemberId(Long memberId) {
@@ -235,10 +210,7 @@ public class AppointmentService {
         return appointmentRepository.findByMemberIdAndAppointmentDate(memberId, today);
     }
 
-    /**
-     * 예약 상태를 내원 대기로 변경 (예약 시간 30분 전 등에 호출)
-     * WAITING → SCHEDULED
-     */
+    // 예약 상태를 내원 대기로 변경 (WAITING → SCHEDULED)
     @Transactional
     public void startWaitingForAppointment(Long appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
@@ -252,21 +224,12 @@ public class AppointmentService {
         log.info("예약 대기 상태 변경: {} (예약 ID: {})", appointment.getMember().getName(), appointmentId);
     }
 
-    /**
-     * 특정 날짜의 모든 예약 조회 (관리자용)
-     * 
-     * @param date 조회할 날짜
-     * @return 해당 날짜의 모든 예약 목록
-     */
+    // 특정 날짜의 모든 예약 조회 (관리자용)
     public List<Appointment> getAppointmentsByDate(LocalDate date) {
         return appointmentRepository.findAllByAppointmentDate(date);
     }
 
-    /**
-     * 오늘 날짜의 WAITING 상태 예약을 SCHEDULED로 변경 (스케줄러용)
-     * 
-     * @return 업데이트된 예약 개수
-     */
+    // 오늘 날짜 WAITING 예약을 SCHEDULED로 변경 (스케줄러용)
     @Transactional
     public int updateTodayWaitingToScheduled() {
         LocalDate today = LocalDate.now();

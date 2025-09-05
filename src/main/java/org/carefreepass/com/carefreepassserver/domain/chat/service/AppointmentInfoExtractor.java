@@ -1,9 +1,13 @@
 package org.carefreepass.com.carefreepassserver.domain.chat.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.ChatMessage;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.MessageSenderType;
 import org.carefreepass.com.carefreepassserver.domain.chat.entity.SymptomAnalysis;
+import org.carefreepass.com.carefreepassserver.domain.hospital.entity.Hospital;
+import org.carefreepass.com.carefreepassserver.domain.hospital.repository.HospitalRepository;
+import org.carefreepass.com.carefreepassserver.golbal.config.ChatProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -13,8 +17,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class AppointmentInfoExtractor {
+    
+    private final ChatProperties chatProperties;
+    private final HospitalRepository hospitalRepository;
     
     private static final int CONVERSATION_HISTORY_LIMIT = 3;
     private static final Pattern DATE_PATTERN = Pattern.compile(
@@ -28,10 +36,30 @@ public class AppointmentInfoExtractor {
         AppointmentInfo info = new AppointmentInfo();
         info.setDepartment(analysis.getRecommendedDepartment());
         
+        // 병원 정보 동적으로 설정
+        setHospitalInfo(info);
+        
         extractDateTimeFromMessage(userMessage, info);
         extractDateTimeFromHistory(history, info);
         
         return info;
+    }
+    
+    // 병원 정보를 동적으로 설정
+    private void setHospitalInfo(AppointmentInfo info) {
+        try {
+            Long hospitalId = chatProperties.getDefaultHospitalId();
+            Hospital hospital = hospitalRepository.findById(hospitalId)
+                    .orElseThrow(() -> new RuntimeException("기본 병원을 찾을 수 없습니다: ID " + hospitalId));
+                    
+            info.setHospitalId(hospitalId);
+            info.setHospitalName(hospital.getName());
+        } catch (Exception e) {
+            log.error("병원 정보 설정 실패", e);
+            // 기본값 설정
+            info.setHospitalId(1L);
+            info.setHospitalName("서울대병원");
+        }
     }
     
     private void extractDateTimeFromMessage(String message, AppointmentInfo info) {

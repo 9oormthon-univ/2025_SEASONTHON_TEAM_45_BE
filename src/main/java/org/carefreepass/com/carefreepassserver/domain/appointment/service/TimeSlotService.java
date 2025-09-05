@@ -22,10 +22,7 @@ import org.carefreepass.com.carefreepassserver.golbal.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 시간대 조회 서비스
- * 환자가 예약 가능한 시간을 조회하는 기능을 담당합니다.
- */
+// 시간대 조회 서비스
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -37,15 +34,7 @@ public class TimeSlotService {
     private final TimeSlotExceptionRepository timeSlotExceptionRepository;
     private final AppointmentRepository appointmentRepository;
 
-    /**
-     * 특정 날짜와 진료과의 예약 가능한 시간 조회
-     * 
-     * @param hospitalId 병원 ID
-     * @param departmentName 진료과명
-     * @param date 조회할 날짜
-     * @return 시간대별 예약 가능 여부
-     * @throws BusinessException 진료과를 찾을 수 없는 경우 (DEPARTMENT_NOT_FOUND)
-     */
+    // 특정 날짜와 진료과의 예약 가능한 시간 조회
     public List<TimeSlotResponse> getAvailableTimeSlots(Long hospitalId, String departmentName, LocalDate date) {
         // 병원 조회
         Hospital hospital = hospitalRepository.findById(hospitalId)
@@ -91,14 +80,7 @@ public class TimeSlotService {
         return timeSlots;
     }
 
-    /**
-     * 기본 시간대 생성
-     * 
-     * @param startTime 시작 시간
-     * @param endTime 종료 시간
-     * @param intervalMinutes 간격(분)
-     * @return 시간 슬롯 목록
-     */
+    // 기본 시간대 생성
     private List<LocalTime> generateBaseTimeSlots(LocalTime startTime, LocalTime endTime, int intervalMinutes) {
         List<LocalTime> timeSlots = new ArrayList<>();
         LocalTime current = startTime;
@@ -116,13 +98,7 @@ public class TimeSlotService {
         return timeSlots;
     }
 
-    /**
-     * 이미 예약된 시간 조회
-     * 
-     * @param department 진료과
-     * @param date 날짜
-     * @return 시간별 예약자명 Map
-     */
+    // 이미 예약된 시간 조회
     private Map<LocalTime, String> getBookedTimes(HospitalDepartment department, LocalDate date) {
         // 모든 활성 상태의 예약 조회 (CANCELLED와 COMPLETED 제외)
         List<AppointmentStatus> activeStatuses = List.of(
@@ -143,15 +119,7 @@ public class TimeSlotService {
                 ));
     }
 
-    /**
-     * 특정 시간이 예약 가능한지 확인
-     * 
-     * @param hospitalId 병원 ID
-     * @param departmentName 진료과명
-     * @param date 날짜
-     * @param time 시간
-     * @return 예약 가능 여부
-     */
+    // 특정 시간이 예약 가능한지 확인
     public boolean isTimeSlotAvailable(Long hospitalId, String departmentName, LocalDate date, LocalTime time) {
         List<TimeSlotResponse> timeSlots = getAvailableTimeSlots(hospitalId, departmentName, date);
         

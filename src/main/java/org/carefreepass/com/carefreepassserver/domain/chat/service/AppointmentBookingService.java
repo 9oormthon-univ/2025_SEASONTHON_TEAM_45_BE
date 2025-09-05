@@ -72,8 +72,8 @@ public class AppointmentBookingService {
     }
     
     private Long createAppointment(ChatSession session, AppointmentInfo info) {
-        // 구름대병원 ID를 1로 가정 (실제 환경에서는 설정으로 관리)
-        Long hospitalId = 1L;
+        // ChatProperties에서 기본 병원 ID 가져오기
+        Long hospitalId = chatProperties.getDefaultHospitalId();
         
         AppointmentCreateRequest request = new AppointmentCreateRequest(
             session.getMember().getId(),
@@ -123,13 +123,11 @@ public class AppointmentBookingService {
         return response.toString();
     }
 
-    /**
-     * 특정 날짜의 예약 가능한 시간을 안내하는 메시지 생성
-     */
+    // 특정 날짜의 예약 가능한 시간을 안내하는 메시지 생성
     private String getAvailableTimesMessage(String departmentName, LocalDate date) {
         try {
-            // 구름대병원 ID를 1로 가정
-            Long hospitalId = 1L;
+            // ChatProperties에서 기본 병원 ID 가져오기
+            Long hospitalId = chatProperties.getDefaultHospitalId();
             List<TimeSlotResponse> timeSlots = timeSlotService.getAvailableTimeSlots(hospitalId, departmentName, date);
             
             List<TimeSlotResponse> availableSlots = timeSlots.stream()
@@ -162,9 +160,7 @@ public class AppointmentBookingService {
         }
     }
 
-    /**
-     * 시간을 사용자 친화적으로 포맷
-     */
+    // 시간을 사용자 친화적으로 포맷
     private String formatTimeForUser(LocalTime time) {
         int hour = time.getHour();
         int minute = time.getMinute();
@@ -184,12 +180,10 @@ public class AppointmentBookingService {
         }
     }
 
-    /**
-     * 실제로 해당 시간이 예약 가능한지 확인
-     */
+    // 실제로 해당 시간이 예약 가능한지 확인
     private boolean isTimeSlotActuallyAvailable(String departmentName, LocalDate date, LocalTime time) {
         try {
-            Long hospitalId = 1L; // 구름대병원
+            Long hospitalId = chatProperties.getDefaultHospitalId();
             return timeSlotService.isTimeSlotAvailable(hospitalId, departmentName, date, time);
         } catch (Exception e) {
             log.error("시간 가용성 확인 실패: {}", e.getMessage());
@@ -197,9 +191,7 @@ public class AppointmentBookingService {
         }
     }
 
-    /**
-     * 요청한 시간이 예약 불가능할 때의 메시지 생성
-     */
+    // 요청한 시간이 예약 불가능할 때의 메시지 생성
     private String generateTimeNotAvailableMessage(String departmentName, LocalDate date, LocalTime requestedTime) {
         StringBuilder response = new StringBuilder();
         response.append("😔 죄송합니다. ").append(formatTimeForUser(requestedTime))
