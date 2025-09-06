@@ -76,10 +76,25 @@ public class AppointmentResponse {
         // PatientProfile이 있고 birthDate가 있으면 변환 시도
         if (patientProfile != null && patientProfile.getBirthDate() != null) {
             try {
-                // birthDate가 문자열로 저장되어 있다면 LocalDate로 변환
-                birthDate = LocalDate.parse(patientProfile.getBirthDate(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                String birthDateStr = patientProfile.getBirthDate().trim();
+                
+                // 8자리 숫자 형식 (yyyyMMdd)
+                if (birthDateStr.matches("\\d{8}")) {
+                    birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
+                }
+                // yyyy-MM-dd 형식
+                else if (birthDateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                }
+                // yyyy.MM.dd 형식
+                else if (birthDateStr.matches("\\d{4}\\.\\d{2}\\.\\d{2}")) {
+                    birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("yyyy.MM.dd"));
+                }
+                else {
+                    birthDate = null;
+                }
             } catch (Exception e) {
-                // 파싱 실패 시 null로 설정 (로그는 생략)
+                // 파싱 실패 시 null로 설정
                 birthDate = null;
             }
         }

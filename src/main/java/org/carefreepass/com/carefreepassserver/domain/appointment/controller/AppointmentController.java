@@ -59,9 +59,7 @@ public class AppointmentController implements AppointmentDocs {
     @GetMapping("/today/waiting")
     public ApiResponseTemplate<List<AppointmentResponse>> getTodayWaitingPatients() {
         List<Appointment> appointments = appointmentService.getTodayWaitingPatients();
-        List<AppointmentResponse> responses = appointments.stream()
-                .map(AppointmentResponse::from)
-                .toList();
+        List<AppointmentResponse> responses = appointmentService.convertToResponseList(appointments);
         return ApiResponseTemplate.ok()
                 .code("APPOINTMENT_4003")
                 .message("오늘 대기 환자 목록 조회가 완료되었습니다.")
@@ -72,9 +70,7 @@ public class AppointmentController implements AppointmentDocs {
     @GetMapping("/today")
     public ApiResponseTemplate<List<AppointmentResponse>> getAllTodayAppointments() {
         List<Appointment> appointments = appointmentService.getAllTodayAppointments();
-        List<AppointmentResponse> responses = appointments.stream()
-                .map(AppointmentResponse::from)
-                .toList();
+        List<AppointmentResponse> responses = appointmentService.convertToResponseList(appointments);
         return ApiResponseTemplate.ok()
                 .code("APPOINTMENT_4004")
                 .message("오늘 예약 목록 조회가 완료되었습니다.")
