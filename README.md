@@ -168,6 +168,12 @@ AI 분석: 소화기 증상 인식 → 내과 추천 (신뢰도: 85%)
 - **개인정보 보호**: 의료법 준수 데이터 암호화
 
 ---
+<img width="1283" height="721" alt="스크린샷 2025-09-08 152125" src="https://github.com/user-attachments/assets/25bd3a35-14b8-4139-b9dc-6b16995a85ac" />
+<img width="1277" height="715" alt="스크린샷 2025-09-08 152132" src="https://github.com/user-attachments/assets/fee4694d-addc-44ff-b005-422b31e952bc" />
+<img width="1280" height="714" alt="스크린샷 2025-09-08 152143" src="https://github.com/user-attachments/assets/edeb2800-477d-416c-a4a6-2060b5b6aca0" />
+<img width="1277" height="718" alt="스크린샷 2025-09-08 152148" src="https://github.com/user-attachments/assets/f1624322-8286-4e83-8235-f7941076e387" />
+<img width="1274" height="705" alt="스크린샷 2025-09-08 152153" src="https://github.com/user-attachments/assets/b3a8bd85-f6bd-4cf4-8f65-811f9712fbb6" />
+<img width="1281" height="721" alt="스크린샷 2025-09-08 152157" src="https://github.com/user-attachments/assets/f5710fe1-1c78-4d99-b954-d76e57cfd366" />
 
 <div align="center">
 
